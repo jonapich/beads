@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"unicode/utf8"
 
 	"github.com/steveyegge/beads/internal/config"
 )
@@ -397,15 +398,7 @@ func TestPrimeClaimGuidanceUsesAtomicClaim(t *testing.T) {
 	}
 }
 
-// TestPrimeMemoryGuidanceDoesNotProhibitHarnessMemory guards GH#6111: both
-// renderings used to emit "Do NOT use MEMORY.md files", which contradicts
-// harnesses that ship a first-party memory whose index file has exactly that
-// name. The guidance now names the store each content class belongs in, so
-// neither rendering may name the file again. The assertion is negative on the
-// old prohibition rather than positive on the new prose, so it survives any
-// future rewording; the bd remember check keeps it from passing vacuously if
-// the memory bullet is dropped altogether.
-func TestPrimeMemoryGuidanceDoesNotProhibitHarnessMemory(t *testing.T) {
+func TestPrimeDoesNotRecommendBdMemory(t *testing.T) {
 	defer stubPrimeStoreUnavailable()()
 	defer stubIsEphemeralBranch(false)()
 	defer stubPrimeHasGitRemote(true)()
@@ -423,30 +416,43 @@ func TestPrimeMemoryGuidanceDoesNotProhibitHarnessMemory(t *testing.T) {
 			if err := outputPrimeContext(&buf, tc.mcpMode, false); err != nil {
 				t.Fatalf("outputPrimeContext failed: %v", err)
 			}
-
-			output := buf.String()
-			if !strings.Contains(output, "bd remember") {
-				t.Fatalf("prime output should still teach bd remember; output:\n%s", output)
-			}
-			if strings.Contains(output, "MEMORY.md") {
-				t.Errorf("prime output should not name MEMORY.md; output:\n%s", output)
+			for _, rejected := range []string{"bd remember", "bd memories", "MEMORY.md"} {
+				if strings.Contains(buf.String(), rejected) {
+					t.Errorf("default prime should not mention %q; output:\n%s", rejected, buf.String())
+				}
 			}
 		})
 	}
 }
 
-func TestPrimeStartsWithTruncationDirective(t *testing.T) {
+// Claude Code delivers SessionStart output whole only up to 10,000 characters;
+// past that the agent gets a file path and a 2,000-character preview.
+func TestPrimeFitsTheHookOutputLimit(t *testing.T) {
+	const hookOutputLimit = 10_000
 	defer stubPrimeStoreUnavailable()()
-	defer stubIsEphemeralBranch(false)()
-	defer stubPrimeHasGitRemote(true)()
 
-	for _, mcpMode := range []bool{false, true} {
-		var buf bytes.Buffer
-		if err := outputPrimeContext(&buf, mcpMode, false); err != nil {
-			t.Fatalf("outputPrimeContext failed: %v", err)
-		}
-		if !strings.HasPrefix(buf.String(), primeTruncationDirective) {
-			t.Fatalf("prime output should start with truncation directive; got %q", buf.String()[:min(120, buf.Len())])
+	for _, profile := range []config.AgentProfile{config.ProfileConservative, config.ProfileTeamMaintainer} {
+		for _, hasRemote := range []bool{true, false} {
+			for _, ephemeral := range []bool{true, false} {
+				for _, noPush := range []bool{true, false} {
+					for _, mcpMode := range []bool{true, false} {
+						for _, stealth := range []bool{true, false} {
+							restore := []func(){stubPrimeAgentProfile(profile), stubPrimeHasGitRemote(hasRemote), stubIsEphemeralBranch(ephemeral), stubPrimeNoPushConfigured(noPush)}
+							var buf bytes.Buffer
+							err := outputPrimeContext(&buf, mcpMode, stealth)
+							for _, r := range restore {
+								r()
+							}
+							if err != nil {
+								t.Fatalf("outputPrimeContext failed: %v", err)
+							}
+							if got := utf8.RuneCount(buf.Bytes()); got >= hookOutputLimit {
+								t.Errorf("profile=%s remote=%v ephemeral=%v noPush=%v mcp=%v stealth=%v: %d characters, limit %d", profile, hasRemote, ephemeral, noPush, mcpMode, stealth, got, hookOutputLimit)
+							}
+						}
+					}
+				}
+			}
 		}
 	}
 }

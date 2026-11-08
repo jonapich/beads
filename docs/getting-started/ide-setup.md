@@ -282,16 +282,15 @@ All integrations use `bd prime` to inject context:
 bd prime
 ```
 
-This outputs a compact (~1-2k tokens) workflow reference including:
-- Available commands
+This outputs a compact workflow reference including:
+- The commands day-to-day work needs (`bd --help` lists the rest)
 - Current project status
 - Workflow patterns
 - Best practices
-- Persistent memories from `bd remember`
 
-`bd prime` prints memories near the top and starts with a truncation warning. If your host stores the full hook output in a file and only shows a preview, have the agent read the full file before continuing.
+The output stays under 10,000 characters, so a host that caps hook output, as Claude Code does, delivers it whole.
 
-In hook contexts, `bd prime --hook-json` wraps the output in the SessionStart JSON envelope (Claude Code, Gemini CLI, Codex). For memory-only hooks:
+In hook contexts, `bd prime --hook-json` wraps the output in the SessionStart JSON envelope (Claude Code, Gemini CLI, Codex). `bd prime` leaves out anything stored with `bd remember`. To print those memories on their own:
 
 ```bash
 bd prime --memories-only

@@ -49,7 +49,6 @@ This project uses bd (beads) for issue tracking.
 
 - Run `bd prime` for workflow context and command guidance.
 - Use `bd ready`, `bd show <id>`, `bd update <id> --claim`, and `bd close <id>`.
-- Use `bd remember "insight"` for durable project facts; keep per-operator preferences in your harness's own memory.
 - Do not use markdown TODO lists for task tracking.
 ```
 
@@ -71,8 +70,8 @@ This project uses bd (beads) for issue tracking.
 | `bd update <id> --claim` | Atomically claim a task (sets assignee + in_progress). |
 | `bd dep add <child> <parent>` | Link tasks (blocks, related, parent-child). |
 | `bd show <id>` | View task details and audit trail. |
-| `bd prime` | Print agent workflow context and persistent memories. |
-| `bd remember "insight"` | Store project memory that `bd prime` injects later. |
+| `bd prime` | Print agent workflow context. |
+| `bd remember "insight"` | Store a project memory; `bd memories` lists them. |
 
 ## 🔗 Hierarchy & Workflow
 

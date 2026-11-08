@@ -66,31 +66,16 @@ func TestEmbeddedPrime(t *testing.T) {
 		}
 	})
 
-	// ===== Memories Injected =====
-
-	t.Run("prime_memories_injected", func(t *testing.T) {
-		// Store a memory
-		cmd := exec.Command(bd, "remember", "always use -race flag in tests", "--key", "prime-test-mem")
-		cmd.Dir = dir
-		cmd.Env = bdEnv(dir)
-		stdout, stderr, err := runCommandBuffers(t, cmd)
-		if err != nil {
-			t.Fatalf("bd remember failed: %v\nstdout:\n%s\nstderr:\n%s", err, stdout.String(), stderr.String())
-		}
-
-		// Prime should include the memory
-		primeOut := bdPrime(t, bd, dir, "--full")
-		if !strings.Contains(primeOut, "race") {
-			t.Errorf("expected memory content in prime output: %s", primeOut[:min(500, len(primeOut))])
-		}
-		memoryIdx := strings.Index(primeOut, "prime-test-mem")
-		sessionIdx := strings.Index(primeOut, "SESSION CLOSE PROTOCOL")
-		if memoryIdx == -1 || sessionIdx == -1 || memoryIdx > sessionIdx {
-			t.Errorf("expected memories before session protocol in prime output")
-		}
-	})
-
 	// ===== Memories Only =====
+
+	// The subtests below read this memory.
+	cmd := exec.Command(bd, "remember", "always use -race flag in tests", "--key", "prime-test-mem")
+	cmd.Dir = dir
+	cmd.Env = bdEnv(dir)
+	if stdout, stderr, err := runCommandBuffers(t, cmd); err != nil {
+		t.Fatalf("bd remember failed: %v\nstdout:\n%s\nstderr:\n%s", err, stdout.String(), stderr.String())
+	}
+
 
 	t.Run("prime_memories_only", func(t *testing.T) {
 		out := bdPrime(t, bd, dir, "--memories-only")
@@ -146,7 +131,7 @@ func TestEmbeddedPrime(t *testing.T) {
 			t.Errorf("prime.disabled=true in config, bd prime printed %q", out[:min(200, len(out))])
 		}
 		set("false")
-		if out := bdPrime(t, bd, dir); !strings.Contains(out, "prime-test-mem") {
+		if out := bdPrime(t, bd, dir); !strings.Contains(out, "SESSION CLOSE PROTOCOL") {
 			t.Errorf("prime.disabled=false must restore the briefing: %s", out[:min(200, len(out))])
 		}
 	})

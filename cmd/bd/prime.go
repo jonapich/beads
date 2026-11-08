@@ -91,11 +91,12 @@ var primeCmd = &cobra.Command{
 	Long: `Output essential Beads workflow context in AI-optimized markdown format.
 
 Automatically detects if MCP server is active and adapts output:
-- MCP mode: Brief workflow reminders (~50 tokens)
-- CLI mode: Full command reference (~1-2k tokens)
+- MCP mode: Brief workflow reminders
+- CLI mode: The commands day-to-day work needs ('bd --help' lists the rest)
 
 Designed for Claude Code, Gemini CLI, and Codex SessionStart hooks to prevent
-agents from forgetting bd workflow after context compaction.
+agents from forgetting bd workflow after context compaction. The default output
+stays under the 10,000 characters Claude Code delivers whole from a hook.
 
 Config options:
 - no-git-ops: When true, outputs stealth mode (no git commands in session close protocol).
@@ -124,21 +125,18 @@ Config options:
 	      ~/.config/beads/ on Linux ($XDG_CONFIG_HOME/beads/ if set),
 	      ~/Library/Application Support/beads/ on macOS,
 	      %AppData%\beads\ on Windows.
-	- Persistent memories (from bd remember) are still appended so memory
-	  injection keeps working under a custom template.
 	- Use --export to dump the default content for customization.
-	- Use --memories-only for hook contexts that should inject only persistent memories; this returns only the memories section even when a custom PRIME.md is present.
-	- Use --no-memories to omit the persistent memories section (useful when the memories section is large and would dominate a context budget). --memories-only takes precedence if both are set.
 
-Memory injection caps:
-	Large memory sets can exceed what a session-start hook host will ingest,
-	and hosts truncate silently. Cap what prime injects with --max-memories N
-	and/or --max-memory-chars N (or the prime.max-memories /
-	prime.max-memory-chars config keys; an explicit flag wins, and an explicit
-	0 forces unlimited). Caps apply at whole-memory boundaries, at least one
-	memory is always emitted, and a banner ahead of the entries reports how
-	many were elided and how to browse the rest with bd memories.
-	--max-memory-chars caps the total bytes of the injected memory entries;
+Persistent memories (from bd remember) are not part of the default output. Use
+--memories-only to print them, alone, even when a custom PRIME.md is present.
+
+Memory caps, for --memories-only:
+	Cap what is printed with --max-memories N and/or --max-memory-chars N (or
+	the prime.max-memories / prime.max-memory-chars config keys; an explicit
+	flag wins, and an explicit 0 forces unlimited). Caps apply at whole-memory
+	boundaries, at least one memory is always emitted, and a banner ahead of
+	the entries reports how many were elided and how to browse the rest with
+	bd memories. --max-memory-chars caps the total bytes of the memory entries;
 	the section header and elision banner are excluded from the budget.`,
 	SilenceUsage:  true,
 	SilenceErrors: true,
@@ -210,17 +208,8 @@ Memory injection caps:
 		}
 
 		// Check for custom PRIME.md override (unless --export flag).
-		// A custom PRIME.md replaces the default workflow text, but the persistent
-		// memories section is still appended (when present) so `bd remember` keeps
-		// working under a custom template — matching the default-template behavior
-		// (GH#3941).
 		if !primeExportMode {
 			if content, ok := readCustomPrimeContent(primeWorkspaceDir(), beadsDir); ok {
-				if !primeNoMemories {
-					if mem := formatMemoriesForPrime(false); mem != "" {
-						content += mem
-					}
-				}
 				emit(content)
 				return nil
 			}
@@ -249,10 +238,10 @@ func init() {
 	primeCmd.Flags().BoolVar(&primeStealthMode, "stealth", false, "Stealth mode (no git operations, flush only)")
 	primeCmd.Flags().BoolVar(&primeExportMode, "export", false, "Output default content (ignores PRIME.md override)")
 	primeCmd.Flags().BoolVar(&primeMemoriesOnly, "memories-only", false, "Output only persistent memories for compact hook contexts")
-	primeCmd.Flags().BoolVar(&primeNoMemories, "no-memories", false, "Omit the persistent memories section (ignored when --memories-only is set, which wins)")
+	primeCmd.Flags().BoolVar(&primeNoMemories, "no-memories", false, "No effect: the default output no longer includes persistent memories")
 	primeCmd.Flags().BoolVar(&primeHookJSONMode, "hook-json", false, "Wrap output in the SessionStart hook JSON envelope (Claude Code, Gemini CLI, Codex)")
-	primeCmd.Flags().IntVar(&primeMaxMemories, "max-memories", 0, "Cap injected persistent memories to N entries (0 = unlimited; falls back to the prime.max-memories config key)")
-	primeCmd.Flags().IntVar(&primeMaxMemoryChars, "max-memory-chars", 0, "Cap the total bytes of injected memory entries, at whole-memory boundaries; section header and banner are not counted (0 = unlimited; falls back to the prime.max-memory-chars config key)")
+	primeCmd.Flags().IntVar(&primeMaxMemories, "max-memories", 0, "With --memories-only, cap printed memories to N entries (0 = unlimited; falls back to the prime.max-memories config key)")
+	primeCmd.Flags().IntVar(&primeMaxMemoryChars, "max-memory-chars", 0, "With --memories-only, cap the total bytes of memory entries, at whole-memory boundaries; section header and banner are not counted (0 = unlimited; falls back to the prime.max-memory-chars config key)")
 	rootCmd.AddCommand(primeCmd)
 }
 
@@ -855,19 +844,10 @@ func outputMCPContext(w io.Writer, stealthMode bool) error {
 	}
 
 	redirectNotice := getRedirectNotice(false)
-	var memories string
-	if !primeNoMemories {
-		memories = formatMemoriesForPrime(true)
-	}
 
-	context := primeTruncationDirective + `# Beads Issue Tracker Active
+	context := `# Beads Issue Tracker Active
 
-` + redirectNotice
-	if memories != "" {
-		context += memories + "\n"
-	}
-
-	context += `# 🚨 SESSION CLOSE PROTOCOL 🚨
+` + redirectNotice + `# 🚨 SESSION CLOSE PROTOCOL 🚨
 
 ` + closeProtocol + `
 
@@ -875,7 +855,6 @@ func outputMCPContext(w io.Writer, stealthMode bool) error {
 - **Default**: Use beads for ALL task tracking (` + "`bd create`" + `, ` + "`bd ready`" + `, ` + "`bd close`" + `)
 - **Prohibited**: Do NOT use TodoWrite, TaskCreate, or markdown files for task tracking
 - **Workflow**: Create beads issue BEFORE writing code, mark in_progress when starting
-- **Memory**: Use ` + "`bd remember`" + ` for durable project facts, not per-tool memory files. Per-operator preferences belong in your harness's own memory.
 - Persistence you don't need beats lost context
 - ` + profileRule + `
 
@@ -1040,22 +1019,13 @@ git status                  # Check changed files
 	}
 
 	redirectNotice := getRedirectNotice(true)
-	var memories string
-	if !primeNoMemories {
-		memories = formatMemoriesForPrime(false)
-	}
 
-	context := primeTruncationDirective + `# Beads Workflow Context
+	context := `# Beads Workflow Context
 
 > **Context Recovery**: Run ` + "`bd prime`" + ` after compaction, clear, or new session
 > Hooks auto-call this in Claude Code and Codex when a beads workspace is resolved
 
-` + redirectNotice
-	if memories != "" {
-		context += memories + "\n"
-	}
-
-	context += `# 🚨 SESSION CLOSE PROTOCOL 🚨
+` + redirectNotice + `# 🚨 SESSION CLOSE PROTOCOL 🚨
 
 **CRITICAL**: Before saying "done" or "complete", you MUST run this checklist:
 
@@ -1069,7 +1039,6 @@ git status                  # Check changed files
 - **Default**: Use beads for ALL task tracking (` + "`bd create`" + `, ` + "`bd ready`" + `, ` + "`bd close`" + `)
 - **Prohibited**: Do NOT use TodoWrite, TaskCreate, or markdown files for task tracking
 - **Workflow**: Create beads issue BEFORE writing code, mark in_progress when starting
-- **Memory**: Use ` + "`bd remember \"insight\"`" + ` for durable **project** facts — keep them here rather than in per-tool memory files, which fragment across accounts and are often capped. Per-operator preferences and agent-specific corrections belong in your harness's own memory; they aren't project knowledge, so keep them out of beads. Search with ` + "`bd memories <keyword>`" + `.
 - Persistence you don't need beats lost context
 - ` + profileRule + `
 - ` + gitWorkflowRule + `
@@ -1089,47 +1058,18 @@ git status                  # Check changed files
 - ` + "`bd create ... --parent=<id>`" + ` - Hierarchical child (task under epic, subtask under task; inherits parent labels)
 - ` + "`bd update <id> --claim`" + ` - Claim work
 - ` + "`bd unclaim <id>`" + ` - Release stuck issue (agent crashed)
-- ` + "`bd update <id> --assignee=username`" + ` - Assign to someone
-- ` + "`bd update <id> --if-assignee=<expected> --assignee=<new>`" + ` - Atomic reassign: applies only if the assignee still matches (--if-status=<expected> guards status; --if-assignee='' requires unassigned). Mismatch exits non-zero with nothing written — never retry blindly
 - ` + "`bd update <id> --title/--description/--design`" + ` - Update fields inline (` + "`--notes`" + ` replaces existing notes and requires ` + "`--force`" + ` once set; prefer ` + "`--append-notes`" + `)
-- ` + "`bd close <id>`" + ` - Mark complete
-- ` + "`bd close <id1> <id2> ...`" + ` - Close multiple issues at once (more efficient)
-- ` + "`bd close <id> --reason=\"explanation\"`" + ` - Close with reason
-- **Tip**: When creating multiple issues/tasks/epics, use parallel subagents for efficiency
+- ` + "`bd comments add <id> \"text\"`" + ` - Add a comment
+- ` + "`bd label add <id> <label>`" + ` / ` + "`bd label remove <id> <label>`" + ` - Manage labels
+- ` + "`bd close <id1> <id2> ...`" + ` - Close completed issues (` + "`--reason=\"explanation\"`" + ` records why)
 - **WARNING**: Do NOT use ` + "`bd edit`" + ` - it opens $EDITOR (vim/nano) which blocks agents
 
-### Dependencies & Blocking
+### Dependencies
 - ` + "`bd dep add <issue> <depends-on>`" + ` - Add dependency (issue depends on depends-on)
-- ` + "`bd blocked`" + ` - Show all blocked issues
-- ` + "`bd show <id>`" + ` - See what's blocking/blocked by this issue
 
 ` + syncSection + `
 
-### Project Health
-- ` + "`bd stats`" + ` - Project statistics (open/closed/blocked counts)
-- ` + "`bd doctor`" + ` - Check for issues (sync problems, missing hooks)
-- ` + "`bd doctor --check=conventions`" + ` - Check for convention drift (lint, stale, orphans)
-
-### Quality Tools
-- ` + "`bd create --validate`" + ` - Check description has required sections
-- ` + "`bd create --acceptance=\"criteria\"`" + ` - Set acceptance criteria (checked by --validate)
-- ` + "`bd create --design=\"decisions\"`" + ` - Record design decisions
-- ` + "`bd create --notes=\"context\"`" + ` - Set supplementary notes (add later with ` + "`bd update --append-notes`" + `)
-- ` + "`bd config set validation.on-create warn`" + ` - Auto-validate on every create
-- ` + "`bd lint`" + ` - Check existing issues for missing sections
-
-### Lifecycle & Hygiene
-- ` + "`bd defer <id> --until=\"date\"`" + ` - Defer work to a future date
-- ` + "`bd supersede <id> --with=<new-id>`" + ` - Mark issue as superseded
-- ` + "`bd close <id> --suggest-next`" + ` - Show newly unblocked issues after closing
-- ` + "`bd stale`" + ` - Find issues with no recent activity
-- ` + "`bd orphans`" + ` - Find issues with broken dependencies
-- ` + "`bd preflight`" + ` - Pre-PR checks (lint, stale, orphans)
-- ` + "`bd human <id>`" + ` - Flag for human decision (list/respond/dismiss)
-
-### Structured Workflows
-- ` + "`bd formula list`" + ` - See available workflow templates
-- ` + "`bd mol pour <name>`" + ` - Start structured workflow from formula
+Everything else: ` + "`bd --help`" + ` lists every command, ` + "`bd <command> --help`" + ` shows its flags.
 
 ## Common Workflows
 
@@ -1141,14 +1081,6 @@ bd update <id> --claim  # Claim it
 ` + "```" + `
 
 ` + completingWorkflow + `
-
-**Creating dependent work:**
-` + "```bash" + `
-# Run bd create commands in parallel (use subagents for many items)
-bd create --title="Implement feature X" --description="Why this issue exists and what needs to be done" --type=feature
-bd create --title="Write tests for X" --description="Why this issue exists and what needs to be done" --type=task
-bd dep add beads-yyy beads-xxx  # Tests depend on Feature (Feature blocks tests)
-` + "```" + `
 `
 	_, _ = fmt.Fprint(w, context)
 

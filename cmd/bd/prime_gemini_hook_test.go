@@ -150,17 +150,14 @@ func TestPrimeBinaryPortfolio(t *testing.T) {
 
 	rememberInWorkspace(t, binPath, localWorkDir, "prime-mem-key", "remember this insight")
 
-	t.Run("TestPrime_CustomPrimeMd_AppendsMemories", func(t *testing.T) {
-		primeScenarioCustomPrimeMdAppendsMemories(t, binPath, localWorkDir)
+	t.Run("TestPrime_Default_LeavesMemoriesOut", func(t *testing.T) {
+		primeScenarioDefaultLeavesMemoriesOut(t, binPath, localWorkDir)
+	})
+	t.Run("TestPrime_CustomPrimeMd_StandsAlone", func(t *testing.T) {
+		primeScenarioCustomPrimeMdStandsAlone(t, binPath, localWorkDir)
 	})
 	t.Run("TestPrime_MemoriesOnly_WithCustomPrimeMd", func(t *testing.T) {
 		primeScenarioMemoriesOnlyWithCustomPrimeMd(t, binPath, localWorkDir)
-	})
-	t.Run("TestPrime_NoMemories_DefaultPath", func(t *testing.T) {
-		primeScenarioNoMemoriesDefaultPath(t, binPath, localWorkDir)
-	})
-	t.Run("TestPrime_NoMemories_CustomPrimeMd", func(t *testing.T) {
-		primeScenarioNoMemoriesCustomPrimeMd(t, binPath, localWorkDir)
 	})
 	t.Run("TestPrime_NoMemories_MemoriesOnlyWins", func(t *testing.T) {
 		primeScenarioNoMemoriesMemoriesOnlyWins(t, binPath, localWorkDir)
@@ -387,25 +384,31 @@ func rememberInWorkspace(t *testing.T, binPath, workDir, key, content string) {
 	}
 }
 
-// TestPrime_CustomPrimeMd_AppendsMemories: a custom .beads/PRIME.md replaces the
-// default workflow text, but persistent memories must still be appended so
-// `bd remember` keeps working under a custom template (GH#3941).
-func primeScenarioCustomPrimeMdAppendsMemories(t *testing.T, binPath, workDir string) {
+// TestPrime_Default_LeavesMemoriesOut: a stored memory reaches neither rendering
+// of the default briefing.
+func primeScenarioDefaultLeavesMemoriesOut(t *testing.T, binPath, workDir string) {
+	for _, mode := range []string{"--full", "--mcp"} {
+		stdout, _ := runPrimeBinary(t, binPath, workDir, mode)
+		out := string(stdout)
+		if !strings.Contains(out, "SESSION CLOSE PROTOCOL") {
+			t.Fatalf("%s should print the briefing, got: %q", mode, firstN(out, 300))
+		}
+		if strings.Contains(out, "remember this insight") {
+			t.Errorf("%s should leave stored memories out, got: %q", mode, firstN(out, 600))
+		}
+	}
+}
+
+// TestPrime_CustomPrimeMd_StandsAlone: a custom .beads/PRIME.md is the whole
+// output. Stored memories are not appended to it.
+func primeScenarioCustomPrimeMdStandsAlone(t *testing.T, binPath, workDir string) {
 	const custom = "# Custom local PRIME.md override\nBe excellent.\n"
 	primePath := filepath.Join(workDir, ".beads", "PRIME.md")
 	writePrimeFile(t, primePath, custom)
 
 	stdout, _ := runPrimeBinary(t, binPath, workDir)
-	out := string(stdout)
-
-	if !strings.Contains(out, "Be excellent.") {
-		t.Errorf("custom PRIME.md content missing from output: %q", firstN(out, 300))
-	}
-	if !strings.Contains(out, "Persistent Memories") {
-		t.Errorf("memories section should be appended under custom PRIME.md, got: %q", firstN(out, 600))
-	}
-	if !strings.Contains(out, "remember this insight") {
-		t.Errorf("memory content should appear under custom PRIME.md, got: %q", firstN(out, 600))
+	if out := string(stdout); out != custom {
+		t.Errorf("output should be exactly the custom PRIME.md, got: %q", firstN(out, 600))
 	}
 }
 
@@ -426,47 +429,6 @@ func primeScenarioMemoriesOnlyWithCustomPrimeMd(t *testing.T, binPath, workDir s
 	}
 	if !strings.Contains(out, "remember this insight") {
 		t.Errorf("--memories-only should include memory content under custom PRIME.md, got: %q", firstN(out, 300))
-	}
-}
-
-// TestPrime_NoMemories_DefaultPath: --no-memories omits the persistent memories
-// section from the default (generated) prime output. A control run without the
-// flag confirms the memory is otherwise present, so the assertion has signal.
-func primeScenarioNoMemoriesDefaultPath(t *testing.T, binPath, workDir string) {
-	// Control: without --no-memories, the memory is injected.
-	ctrl, _ := runPrimeBinary(t, binPath, workDir, "--full")
-	if !strings.Contains(string(ctrl), "remember this insight") {
-		t.Fatalf("control run should include memory, got: %q", firstN(string(ctrl), 400))
-	}
-
-	// With --no-memories, the memories section is omitted.
-	stdout, _ := runPrimeBinary(t, binPath, workDir, "--full", "--no-memories")
-	out := string(stdout)
-	if strings.Contains(out, "remember this insight") {
-		t.Errorf("--no-memories should omit memory content, got: %q", firstN(out, 400))
-	}
-	if strings.Contains(out, "Persistent Memories") {
-		t.Errorf("--no-memories should omit the Persistent Memories section, got: %q", firstN(out, 400))
-	}
-	// The generated workflow context should still be present.
-	if !strings.Contains(out, "Beads") {
-		t.Errorf("--no-memories should still emit workflow context, got: %q", firstN(out, 400))
-	}
-}
-
-// TestPrime_NoMemories_CustomPrimeMd: --no-memories suppresses the memories that
-// GH#3941 appends under a custom PRIME.md; the custom content itself is unaffected.
-func primeScenarioNoMemoriesCustomPrimeMd(t *testing.T, binPath, workDir string) {
-	const custom = "# Custom local PRIME.md override\nBe excellent.\n"
-	writePrimeFile(t, filepath.Join(workDir, ".beads", "PRIME.md"), custom)
-
-	stdout, _ := runPrimeBinary(t, binPath, workDir, "--no-memories")
-	out := string(stdout)
-	if !strings.Contains(out, "Be excellent.") {
-		t.Errorf("custom PRIME.md content should be present, got: %q", firstN(out, 300))
-	}
-	if strings.Contains(out, "remember this insight") || strings.Contains(out, "Persistent Memories") {
-		t.Errorf("--no-memories should omit memories under custom PRIME.md, got: %q", firstN(out, 400))
 	}
 }
 
