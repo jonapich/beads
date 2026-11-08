@@ -2670,6 +2670,12 @@ var rootCmd = &cobra.Command{
 				if shouldAutoPruneEventsJournal(cmd) {
 					maybeAutoPruneEventsJournal(rootCtx, beads.FindBeadsDir())
 				}
+
+				// After the prune, so a pass can collect what it freed. Only
+				// writes can grow the journal.
+				if !isReadOnlyCommand(cmd.Name()) {
+					maybeAutoGC(rootCtx)
+				}
 			}
 
 			// Signal that store is closing (prevents background flush from accessing closed store)

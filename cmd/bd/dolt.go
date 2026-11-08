@@ -750,6 +750,9 @@ variables for authentication.
 Use --force to overwrite remote changes (e.g., when the remote has
 uncommitted changes in its working set).
 
+If the last push or fetch shows the remote already has your latest commit, bd
+says so without contacting the remote. --force always pushes.
+
 Name a remote to push to it instead of the default: 'bd dolt push <remote>'
 or 'bd dolt push --remote <remote>'. The remote must already exist (see
 'bd dolt remote add').`,
@@ -781,6 +784,10 @@ or 'bd dolt push --remote <remote>'. The remote must already exist (see
 			return err
 		}
 		if remote != "" {
+			if !force && pushAlreadyCurrent(ctx, st, remote) {
+				fmt.Println(pushUpToDateMessage)
+				return nil
+			}
 			fmt.Printf("Pushing to Dolt remote %q...\n", remote)
 			if err := st.PushRemote(ctx, remote, force); err != nil {
 				fmt.Fprintf(os.Stderr, "Error: %v\n", err)
@@ -807,6 +814,10 @@ or 'bd dolt push --remote <remote>'. The remote must already exist (see
 			return HandleError("%v", err)
 		} else if adopted {
 			fmt.Println("Configured Dolt remote origin from git origin.")
+		}
+		if !force && pushAlreadyCurrent(ctx, st, "") {
+			fmt.Println(pushUpToDateMessage)
+			return nil
 		}
 		fmt.Println("Pushing to Dolt remote...")
 

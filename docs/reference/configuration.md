@@ -116,6 +116,8 @@ Any key whose name contains `api_key`, `api-key`, `secret`, `token`, or `passwor
 | `dolt.auto-push` | — | `BD_DOLT_AUTO_PUSH` | `false` | Auto-push to Dolt remote after writes (opt-in; see [below](#auto-push)) |
 | `dolt.auto-push-interval` | — | `BD_DOLT_AUTO_PUSH_INTERVAL` | `5m` | Minimum time between auto-pushes |
 | `dolt.auto-push-timeout` | — | `BD_DOLT_AUTO_PUSH_TIMEOUT` | `30s` | Timeout for a single auto-push attempt |
+| `dolt.auto-gc-journal-mb` | — | `BD_DOLT_AUTO_GC_JOURNAL_MB` | `32` | In embedded mode, collect garbage after a write once Dolt's journal reaches this size in MB; `0` turns it off (see [below](#automatic-garbage-collection)) |
+| `dolt.auto-gc-interval` | — | `BD_DOLT_AUTO_GC_INTERVAL` | `10m` | Minimum time between automatic garbage collection attempts |
 | `dolt.local-only` | — | `BD_DOLT_LOCAL_ONLY` | `false` | Keep Dolt data off the network: skip remote wiring at `bd init`, suppress auto-push, have `bd dolt push`/`pull` and `bd sync` report remote sync as disabled without contacting a remote, and refuse `bd dolt remote add` |
 | `dolt.shared-server` | `--shared-server` | `BEADS_DOLT_SHARED_SERVER` | `false` | Share one Dolt server at `~/.beads/shared-server/` |
 | `dolt.max-conns` | — | `BEADS_DOLT_MAX_CONNS` | `10` | Connection pool size |
@@ -277,6 +279,20 @@ How it works:
 - Last push time and commit are tracked in `.beads/push-state.json`, a per-machine file (not in the database, to avoid merge conflicts across machines).
 
 Before pushing, `bd` verifies the local chunk store with `dolt fsck --quiet`, bounded by a 30-second timeout. For large stores, raise it with the runtime-only `BEADS_FSCK_TIMEOUT` environment variable (accepts durations like `2m` or bare seconds like `90`).
+
+## Automatic garbage collection
+
+Every write appends to Dolt's journal, which also keeps data no commit needs any more. Left alone, it grows to many times the size of your issues and slows every command, because each one reads it when it opens the database.
+
+In embedded mode, `bd` collects that garbage after a write once the journal reaches `dolt.auto-gc-journal-mb`. A pass usually takes about a second, keeps your full history and deletes no issues.
+
+```yaml
+dolt:
+  auto-gc-journal-mb: 32  # 0 turns it off
+  auto-gc-interval: 10m   # Minimum time between attempts
+```
+
+A failed pass prints a warning and never fails the command that triggered it. `bd gc` is separate: it runs a pass on demand and, unless you pass `--skip-decay`, also deletes old closed issues.
 
 ## Actor Identity Resolution
 

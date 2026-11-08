@@ -418,6 +418,11 @@ func initialize(beadsDirSetting string) error {
 	v.SetDefault("backup.git-push", false)
 	v.SetDefault("backup.git-repo", "")
 
+	// Automatic Dolt garbage collection in embedded mode: run a pass after a
+	// write once the chunk journal reaches this size (0 turns it off).
+	v.SetDefault("dolt.auto-gc-journal-mb", 32)
+	v.SetDefault("dolt.auto-gc-interval", "10m")
+
 	// Auto-export: optional JSONL export after mutations for viewers,
 	// interchange, and backup. It is not cross-machine sync; Dolt remotes are
 	// the source of truth for sync. Viewer integrations can opt in explicitly.
