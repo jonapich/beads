@@ -75,40 +75,14 @@ func CheckCLIVersionLocalOnly(cliVersion string) DoctorCheck {
 	}
 }
 
-// installScriptCommand is the default upgrade/install command for non-Homebrew installations.
-const installScriptCommand = "curl -fsSL https://raw.githubusercontent.com/steveyegge/beads/main/scripts/install.sh | bash"
+// installScriptCommand is the default upgrade/install guidance for non-Homebrew
+// installations. This fork publishes no releases or install script: bd is built
+// from a reviewed checkout.
+const installScriptCommand = "docker buildx bake  # run in a clone of https://github.com/jonapich/beads"
 
-// getUpgradeCommand returns the appropriate upgrade command based on how bd was installed.
-// Detects Homebrew on macOS/Linux, and falls back to the install script on all platforms.
+// getUpgradeCommand returns the upgrade command. This fork has one install
+// method, so it no longer depends on how the running binary was installed.
 func getUpgradeCommand() string {
-	execPath, err := os.Executable()
-	if err != nil {
-		return installScriptCommand
-	}
-
-	// Resolve symlinks to get the real path
-	realPath, err := filepath.EvalSymlinks(execPath)
-	if err != nil {
-		realPath = execPath
-	}
-
-	return upgradeCommandForPath(realPath)
-}
-
-// upgradeCommandForPath returns the upgrade command for a given executable path.
-// The homebrew-core formula is named "beads" (Formula/b/beads.rb), so the correct
-// command is "brew upgrade beads" — even for the legacy tap that used "bd.rb".
-func upgradeCommandForPath(execPath string) string {
-	lowerPath := strings.ToLower(execPath)
-
-	// Check for Homebrew Cellar path (macOS/Linux)
-	// Matches both homebrew-core formula "beads" and legacy tap formula "bd"
-	if strings.Contains(lowerPath, "/cellar/beads/") ||
-		strings.Contains(lowerPath, "/cellar/bd/") {
-		return "brew upgrade beads"
-	}
-
-	// Default to install script (works on all platforms including Windows via WSL/Git Bash)
 	return installScriptCommand
 }
 
@@ -227,7 +201,7 @@ func CheckMetadataVersionTracking(path string, currentVersion string) DoctorChec
 
 // fetchLatestGitHubRelease fetches the latest release version from GitHub API.
 func fetchLatestGitHubRelease() (string, error) {
-	url := "https://api.github.com/repos/steveyegge/beads/releases/latest"
+	url := "https://api.github.com/repos/jonapich/beads/releases/latest"
 
 	client := &http.Client{
 		Timeout: 5 * time.Second,

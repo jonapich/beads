@@ -47,7 +47,7 @@ var RequiredMin = MustParse("2.6.0")
 // RequiredMin; installDocsURL names the pinned install steps.
 const (
 	releaseNotesURL = "https://github.com/dolthub/dolt/releases/tag/v2.6.0"
-	installDocsURL  = "https://beads.gascity.com/architecture/dolt#which-dolt-version-to-install"
+	installDocsURL  = "https://github.com/jonapich/beads/blob/main/docs/architecture/dolt.md#which-dolt-version-to-install"
 )
 
 // BelowMinimumError reports a dolt below RequiredMin. It wraps

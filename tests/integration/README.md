@@ -4,7 +4,7 @@ This directory contains integration tests for bd (beads) that test end-to-end fu
 
 ## Prerequisites
 
-- bd installed: `curl -fsSL https://raw.githubusercontent.com/gastownhall/beads/main/scripts/install.sh | bash`
+- bd installed: `docker buildx bake  # run in a clone of https://github.com/jonapich/beads`
 - Python 3.7+ for Python-based tests
 
 ## Running Tests

@@ -77,7 +77,7 @@ For detailed docs: see AGENTS.md, QUICKSTART.md, or run ` + "`bd --help`" + `
 
 const aiderReadmeTemplate = `# Aider + Beads Integration
 
-This project uses [Beads (bd)](https://github.com/steveyegge/beads) for issue tracking.
+This project uses [Beads (bd)](https://github.com/jonapich/beads) for issue tracking.
 
 ## How This Works with Aider
 
@@ -146,7 +146,7 @@ The AI will suggest the appropriate ` + "`bd`" + ` command, which you run via ` 
 
 - Run ` + "`bd --help`" + ` for full command reference
 - See ` + "`AGENTS.md`" + ` for detailed AI integration docs
-- See the beads quickstart (https://github.com/gastownhall/beads/blob/main/docs/getting-started/quickstart.md) for a human-oriented guide
+- See the beads quickstart (https://github.com/jonapich/beads/blob/main/docs/getting-started/quickstart.md) for a human-oriented guide
 `
 
 func InstallAider() error {

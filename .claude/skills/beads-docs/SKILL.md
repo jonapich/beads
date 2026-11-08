@@ -159,7 +159,7 @@ not drift from the code).
 
 Mermaid fences render natively — prefer them for graphs and flows. For richer
 diagrams use the Excalidraw pipeline: author the `.excalidraw` source under
-`docs/diagrams/excalidraw/`, render with `make diagrams-excalidraw` (source
+`docs/diagrams/excalidraw/`, render with the Excalidraw CLI (source
 and rendered `.svg` are both committed), embed as
 `/diagrams/excalidraw-rendered/<name>.svg` with descriptive alt text, and
 keep labels short (a two-line "Name / role" beats a sentence crammed in a
@@ -201,11 +201,11 @@ document what the pinned release does, never main-only features. See
 ## 9. Verify before you call it done
 
 Run the gates in [references/verification.md](references/verification.md).
-The short list: `bazel test //test/docsync:docsync_test --config=ci`
-(nav↔file sync + link conventions),
+The short list: `docker buildx bake test` with
+`BD_TEST_ARGS=./test/docsync/...` (nav↔file sync + link conventions),
 `./scripts/generate-cli-docs.sh --check` (generated docs fresh),
 `./scripts/check-doc-freshness.sh` (Last reviewed markers), and a live
-preview with `make docs-dev` (or `./mint.sh dev`) at `localhost:3000`.
+preview with `./mint.sh dev` at `localhost:3000`.
 
 When you **move or remove a page**: add a redirect to the `redirects` array
 in `docs/docs.json`, rewrite inbound links repo-wide (README, engdocs/,

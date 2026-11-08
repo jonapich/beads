@@ -301,6 +301,7 @@ func TestResolveMetricsEnabledHonorsDoNotTrack(t *testing.T) {
 	t.Setenv("USERPROFILE", home)
 	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, ".config"))
 	t.Setenv("BEADS_TEST_IGNORE_REPO_CONFIG", "1")
+	t.Setenv(metrics.EnvEndpoint, "https://collector.example.invalid/collect")
 
 	for _, key := range []string{metrics.EnvDisableMetrics, metrics.EnvDoNotTrack} {
 		if orig, ok := os.LookupEnv(key); ok {
@@ -347,6 +348,27 @@ func TestResolveMetricsEnabledHonorsDoNotTrack(t *testing.T) {
 	}
 }
 
+// TestResolveMetricsEnabledRequiresEndpoint pins this fork's default: with no
+// collector configured, metrics stay off even when an override asks for them.
+func TestResolveMetricsEnabledRequiresEndpoint(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
+	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, ".config"))
+	t.Setenv("BEADS_TEST_IGNORE_REPO_CONFIG", "1")
+	t.Setenv(metrics.EnvEndpoint, "")
+	t.Setenv(metrics.EnvDisableMetrics, "0")
+
+	config.ResetForTesting()
+	t.Cleanup(config.ResetForTesting)
+	if err := config.Initialize(); err != nil {
+		t.Fatalf("config.Initialize: %v", err)
+	}
+	if resolveMetricsEnabled() {
+		t.Error("resolveMetricsEnabled() = true with no endpoint configured, want false")
+	}
+}
+
 // TestResolveMetricsDoNotTrackIsDisableOnly is the regression guard for the
 // PR #4938 review finding that a falsey DO_NOT_TRACK could re-enable telemetry
 // over an explicit opt-out. With a saved `bd metrics off`, DO_NOT_TRACK=0,
@@ -359,6 +381,7 @@ func TestResolveMetricsDoNotTrackIsDisableOnly(t *testing.T) {
 	t.Setenv("USERPROFILE", home)
 	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, ".config"))
 	t.Setenv("BEADS_TEST_IGNORE_REPO_CONFIG", "1")
+	t.Setenv(metrics.EnvEndpoint, "https://collector.example.invalid/collect")
 
 	for _, key := range []string{metrics.EnvDisableMetrics, metrics.EnvDoNotTrack} {
 		if orig, ok := os.LookupEnv(key); ok {

@@ -1,8 +1,8 @@
 {
   "name": "beads-marketplace",
-  "description": "Local marketplace for beads plugin development",
+  "description": "Marketplace for the jonapich/beads fork of the beads plugin",
   "owner": {
-    "name": "Steve Yegge"
+    "name": "jonapich"
   },
   "plugins": [
     {

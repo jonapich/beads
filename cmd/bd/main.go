@@ -3110,6 +3110,10 @@ func main() {
 }
 
 func resolveMetricsEnabled() bool {
+	// With no collector configured there is nowhere to send events.
+	if resolveMetricsEndpoint() == "" {
+		return false
+	}
 	if v, ok := os.LookupEnv(metrics.EnvDisableMetrics); ok {
 		return !envTruthyValue(v)
 	}

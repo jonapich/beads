@@ -61,10 +61,10 @@ Read-only PR safety check for agents and maintainers.
 
 ```bash
 # Before implementing or opening a related PR
-./scripts/pr-preflight.sh --search "topic keywords" --repo gastownhall/beads
+./scripts/pr-preflight.sh --search "topic keywords" --repo jonapich/beads
 
 # Before changing, closing, or merging an existing PR
-./scripts/pr-preflight.sh 123 --repo gastownhall/beads
+./scripts/pr-preflight.sh 123 --repo jonapich/beads
 ```
 
 It reports contributor/fork status, draft/review/merge/check state, risky diff
@@ -154,7 +154,6 @@ After the script finishes:
 - GitHub Actions builds binaries for all platforms (~5 minutes)
 - PyPI package is published automatically
 - Homebrew core formula is verified or tracked through its canonical PR
-- Users can `brew upgrade beads` to get the new version after Homebrew merges
 - GitHub Release is created with binaries and changelog
 
 ---

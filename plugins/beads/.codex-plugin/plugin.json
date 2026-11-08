@@ -6,8 +6,8 @@
     "name": "Steve Yegge",
     "url": "https://github.com/steveyegge"
   },
-  "homepage": "https://github.com/gastownhall/beads",
-  "repository": "https://github.com/gastownhall/beads",
+  "homepage": "https://github.com/jonapich/beads",
+  "repository": "https://github.com/jonapich/beads",
   "license": "MIT",
   "keywords": [
     "issue-tracker",
@@ -27,7 +27,7 @@
       "Skills",
       "Task tracking"
     ],
-    "websiteURL": "https://github.com/gastownhall/beads",
+    "websiteURL": "https://github.com/jonapich/beads",
     "defaultPrompt": [
       "Use $beads to show ready work in this repo.",
       "Use $beads to claim the top ready task and summarize it.",

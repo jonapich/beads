@@ -93,7 +93,7 @@ func metricsTestEnv(home string, extra ...string) []string {
 		}
 		out = append(out, e)
 	}
-	out = append(out, "BD_DISABLE_EVENT_FLUSH=1")
+	out = append(out, "BD_DISABLE_EVENT_FLUSH=1", metrics.EnvEndpoint+"=https://collector.example.invalid/collect")
 	return append(out, extra...)
 }
 
@@ -318,11 +318,11 @@ func TestInitBootstrapsUserConfigWhenMissing(t *testing.T) {
 		t.Fatalf("read %s: %v", path, err)
 	}
 	got := string(body)
-	if !strings.Contains(got, metrics.DefaultEndpoint) {
-		t.Errorf("user config missing metrics endpoint.\nfile: %q", got)
+	if !strings.Contains(got, "disabled:") {
+		t.Errorf("user config missing metrics.disabled key.\nfile: %q", got)
 	}
-	if !strings.Contains(got, "endpoint:") {
-		t.Errorf("user config missing endpoint key.\nfile: %q", got)
+	if strings.Contains(got, "endpoint:") {
+		t.Errorf("user config should not persist an endpoint the user did not set.\nfile: %q", got)
 	}
 }
 

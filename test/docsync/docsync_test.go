@@ -64,7 +64,6 @@ var rootDocFiles = []string{
 	"AGENT_INSTRUCTIONS.md",
 	"CONTRIBUTING.md",
 	"CLAUDE.md",
-	"RELEASING.md",
 	"PR_MAINTAINER_GUIDELINES.md",
 	"ROADMAP.md",
 }

@@ -23,7 +23,7 @@ import (
 const gitCmdTimeout = 30 * time.Second
 
 const (
-	hooksExamplesURL = "https://github.com/steveyegge/beads/tree/main/examples/git-hooks"
+	hooksExamplesURL = "https://github.com/jonapich/beads/tree/main/examples/git-hooks"
 	hooksUpgradeURL  = "https://github.com/steveyegge/beads/issues/615"
 )
 

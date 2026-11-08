@@ -643,7 +643,7 @@ func writeMergeBlockers(w io.Writer, b storage.MergeBlockers) {
 		fmt.Fprintln(w, "                          (dolt merge --abort, or CALL DOLT_MERGE('--abort') on the server serving")
 		fmt.Fprintln(w, "                          this store), and do not run DOLT_CHECKOUT('--','events'): it deletes this")
 		fmt.Fprintln(w, "                          clone's working events table. Recovery:")
-		fmt.Fprintln(w, "                          https://github.com/gastownhall/beads/blob/main/docs/recovery/sync-failures.md#merge-blocked-on-the-events-table-migration-0062")
+		fmt.Fprintln(w, "                          https://github.com/jonapich/beads/blob/main/docs/recovery/sync-failures.md#merge-blocked-on-the-events-table-migration-0062")
 	}
 	if otherSchemaConflicts > 0 {
 		// Not `dolt conflicts resolve`: dolt refuses that outright while a

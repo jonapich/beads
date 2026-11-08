@@ -3,18 +3,13 @@ package doctor
 import (
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/steveyegge/beads/cmd/bd/setup"
 )
-
-var latestPyPIVersionFetcher = fetchLatestPyPIVersion
 
 // CheckClaude returns Claude integration verification as a DoctorCheck.
 // repoPath is the project root directory.
@@ -84,7 +79,7 @@ func CheckClaude(repoPath string) DoctorCheck {
 			Fix: "Set up Claude integration:\n" +
 				"  Option 1: Install the beads plugin (recommended)\n" +
 				"    • Provides hooks, slash commands, and MCP tools automatically\n" +
-				"    • See: https://github.com/gastownhall/beads/blob/main/docs/integrations/claude-code-plugin.md\n" +
+				"    • See: https://github.com/jonapich/beads/blob/main/docs/integrations/claude-code-plugin.md\n" +
 				"\n" +
 				"  Option 2: CLI-only mode\n" +
 				"    • Run 'bd setup claude' to add SessionStart hooks\n" +
@@ -290,8 +285,7 @@ func CheckBdInPath() DoctorCheck {
 			Message: "'bd' command not found in PATH",
 			Detail:  "Claude hooks execute 'bd prime' and won't work without bd in PATH",
 			Fix: "Install bd globally:\n" +
-				"  • Homebrew: brew install beads\n" +
-				"  • Script: " + installScriptCommand + "\n" +
+				"  • Build: " + installScriptCommand + "\n" +
 				"  • Or add bd to your PATH",
 		}
 	}
@@ -340,8 +334,7 @@ func CheckDocumentationBdPrimeReference(repoPath string) DoctorCheck {
 			Message: "Documentation references 'bd prime' but command not found",
 			Detail:  "Files: " + strings.Join(filesWithBdPrime, ", "),
 			Fix: "Upgrade bd to get the 'bd prime' command:\n" +
-				"  • Homebrew: brew upgrade beads\n" +
-				"  • Script: " + installScriptCommand + "\n" +
+				"  • Build: " + installScriptCommand + "\n" +
 				"  Or remove 'bd prime' references from documentation if using older version",
 		}
 	}
@@ -399,36 +392,7 @@ func CheckClaudePlugin() DoctorCheck {
 			Name:    "Claude Plugin",
 			Status:  StatusWarning,
 			Message: "beads plugin not installed",
-			Fix:     "Install plugin: /plugin marketplace add steveyegge/beads && /plugin install beads (see docs/integrations/claude-code-plugin.md)",
-		}
-	}
-
-	// Query PyPI for latest MCP version
-	latestMCPVersion, err := latestPyPIVersionFetcher("beads-mcp")
-	if err != nil {
-		// Network error - don't fail
-		return DoctorCheck{
-			Name:    "Claude Plugin",
-			Status:  StatusOK,
-			Message: fmt.Sprintf("version %s (unable to check for updates)", pluginVersion),
-		}
-	}
-
-	// Compare versions
-	if latestMCPVersion == "" || pluginVersion == latestMCPVersion {
-		return DoctorCheck{
-			Name:    "Claude Plugin",
-			Status:  StatusOK,
-			Message: fmt.Sprintf("version %s (latest)", pluginVersion),
-		}
-	}
-
-	if CompareVersions(latestMCPVersion, pluginVersion) > 0 {
-		return DoctorCheck{
-			Name:    "Claude Plugin",
-			Status:  StatusWarning,
-			Message: fmt.Sprintf("version %s (latest: %s)", pluginVersion, latestMCPVersion),
-			Fix:     "Update plugin: /plugin update beads@beads-marketplace\nRestart Claude Code after update",
+			Fix:     "Install plugin: /plugin marketplace add jonapich/beads && /plugin install beads (see docs/integrations/claude-code-plugin.md)",
 		}
 	}
 
@@ -465,7 +429,7 @@ func CheckClaudePluginLocalOnly() DoctorCheck {
 			Name:    "Claude Plugin",
 			Status:  StatusWarning,
 			Message: "beads plugin not installed",
-			Fix:     "Install plugin: /plugin marketplace add steveyegge/beads && /plugin install beads (see docs/integrations/claude-code-plugin.md)",
+			Fix:     "Install plugin: /plugin marketplace add jonapich/beads && /plugin install beads (see docs/integrations/claude-code-plugin.md)",
 		}
 	}
 
@@ -542,48 +506,6 @@ func GetClaudePluginVersion() (version string, installed bool, err error) {
 	return "", false, nil
 }
 
-func fetchLatestPyPIVersion(packageName string) (string, error) {
-	url := fmt.Sprintf("https://pypi.org/pypi/%s/json", packageName)
-
-	client := &http.Client{
-		Timeout: 5 * time.Second,
-	}
-
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return "", err
-	}
-
-	// Set User-Agent
-	req.Header.Set("User-Agent", "beads-cli-doctor")
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer func() { _ = resp.Body.Close() }()
-
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("pypi api returned status %d", resp.StatusCode)
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", err
-	}
-
-	var data struct {
-		Info struct {
-			Version string `json:"version"`
-		} `json:"info"`
-	}
-
-	if err := json.Unmarshal(body, &data); err != nil {
-		return "", err
-	}
-
-	return data.Info.Version, nil
-}
 
 // CheckClaudeSettingsHealth validates that Claude Code settings files are well-formed JSON.
 // Malformed settings silently break hooks and plugin detection. It checks the

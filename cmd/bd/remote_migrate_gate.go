@@ -11,18 +11,18 @@ import (
 const (
 	// remoteBackedDocsURL covers the #4259 migrate-or-adopt decisions: the
 	// database syncs with a remote and the question is which clone migrates.
-	remoteBackedDocsURL = "https://github.com/gastownhall/beads/blob/main/docs/getting-started/upgrading.md#remote-backed-databases-and-multiple-clones"
+	remoteBackedDocsURL = "https://github.com/jonapich/beads/blob/main/docs/getting-started/upgrading.md#remote-backed-databases-and-multiple-clones"
 	// sharedServersDocsURL covers the #5920 shared-store decisions: one
 	// database, many clients of one server, and the question is whether they
 	// are all upgraded.
-	sharedServersDocsURL = "https://github.com/gastownhall/beads/blob/main/docs/getting-started/upgrading.md#shared-servers"
+	sharedServersDocsURL = "https://github.com/jonapich/beads/blob/main/docs/getting-started/upgrading.md#shared-servers"
 	// dataBehindDocsURL covers the #6575 data-behind stop. It needs its own
 	// anchor for the same reason sharedServersDocsURL does: the remote-backed
 	// section's recipe is migrate-or-adopt coordination, and its ordering rule
 	// says `bd dolt pull` is refused on every pending-migration open — which is
 	// exactly the command this stop's options prescribe. An agent following the
 	// default link would be steered off the one command that works.
-	dataBehindDocsURL = "https://github.com/gastownhall/beads/blob/main/docs/getting-started/upgrading.md#clone-behind-the-remote"
+	dataBehindDocsURL = "https://github.com/jonapich/beads/blob/main/docs/getting-started/upgrading.md#clone-behind-the-remote"
 )
 
 // humanDecisionRequired reports whether this refusal is one an agent must stop

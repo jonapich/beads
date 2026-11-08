@@ -29,7 +29,7 @@ This project uses **bd** (beads) for issue tracking. Run `bd prime` for full wor
 > remote — separate from `refs/heads/*` where your code lives.
 > `.beads/issues.jsonl` is a passive export, not the wire protocol.
 >
-> See [sync-concepts](https://github.com/gastownhall/beads/blob/main/docs/core-concepts/sync-concepts.md)
+> See [sync-concepts](https://github.com/jonapich/beads/blob/main/docs/core-concepts/sync-concepts.md)
 > for the one-screen overview and anti-patterns (don't treat JSONL as the
 > source of truth; don't `bd import` during normal operation; don't
 > reach for third-party Dolt hosting before trying the default).
@@ -67,7 +67,7 @@ cp -rf source dest          # NOT: cp -r source dest
 - `apt-get` - use `-y` flag
 - `brew` - use `HOMEBREW_NO_AUTO_UPDATE=1` env var
 
-<!-- BEGIN BEADS INTEGRATION v:1 profile:full hash:9c890b20 -->
+<!-- BEGIN BEADS INTEGRATION v:1 profile:full hash:ae233718 -->
 [managed section body: byte-identical to internal/templates/agents/testdata/managed-section-full-no-remote.md]
 <!-- END BEADS INTEGRATION -->
 
@@ -92,14 +92,14 @@ bd prime                # Refresh Beads context
 - Run `bd prime` when Beads context is missing or stale. Codex 0.129.0+ can load Beads context automatically through native hooks; use `/hooks` to inspect or toggle them.
 - Keep durable project facts in Beads via `bd remember` rather than in per-tool memory files, which fragment across accounts; per-operator preferences belong in your harness's own memory.
 
-**Architecture in one line:** issues live in a local Dolt DB; sync uses `refs/dolt/data` on your git remote; `.beads/issues.jsonl` is a passive export. See https://github.com/gastownhall/beads/blob/main/docs/core-concepts/sync-concepts.md for details and anti-patterns.
+**Architecture in one line:** issues live in a local Dolt DB; sync uses `refs/dolt/data` on your git remote; `.beads/issues.jsonl` is a passive export. See https://github.com/jonapich/beads/blob/main/docs/core-concepts/sync-concepts.md for details and anti-patterns.
 <!-- END BEADS CODEX SETUP -->
 --- files: created $PROJECT/CLAUDE.md
 # Project Instructions for AI Agents
 
 This file provides instructions and context for AI coding agents working on this project.
 
-<!-- BEGIN BEADS INTEGRATION v:1 profile:minimal hash:cdcea925 -->
+<!-- BEGIN BEADS INTEGRATION v:1 profile:minimal hash:e1b6662a -->
 [managed section body: byte-identical to internal/templates/agents/testdata/managed-section-minimal-no-remote.md]
 <!-- END BEADS INTEGRATION -->
 

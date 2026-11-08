@@ -1,0 +1,4 @@
+.git
+dist
+bazel-*
+**/node_modules

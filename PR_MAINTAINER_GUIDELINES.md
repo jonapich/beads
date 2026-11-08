@@ -34,7 +34,7 @@ and issues**:
 
 ```bash
 scripts/pr-preflight.sh --search "<topic keywords>"
-gh search prs --repo gastownhall/beads --state open "<bug keywords>"
+gh search prs --repo jonapich/beads --state open "<bug keywords>"
 ```
 
 The rule at the top of this section always covered implementing, competing, and

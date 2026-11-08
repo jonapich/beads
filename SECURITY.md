@@ -4,7 +4,7 @@
 
 If you discover a security vulnerability in bd, please report it responsibly:
 
-**Email**: security@steveyegge.com (or open a private security advisory on GitHub)
+Open a private security advisory at https://github.com/jonapich/beads/security/advisories/new
 
 Please include:
 - Description of the vulnerability
@@ -24,9 +24,9 @@ not download or run them.**
 
 How to stay safe:
 
-- **Official builds and releases come only from this repository's
-  [Releases](https://github.com/gastownhall/beads/releases) page** and the project's documented install
-  instructions. Maintainers will never ask you to download a zip or executable
+- **This fork publishes no binaries.** Build `bd` from a checkout you have
+  reviewed, as the [installation guide](docs/getting-started/installation.md)
+  describes. Maintainers will never ask you to download a zip or executable
   posted in an issue, pull request, or discussion comment.
 - A link that points to `github.com/user-attachments/files/...` is a file
   someone attached to a comment — it is **not** a vetted release asset, even

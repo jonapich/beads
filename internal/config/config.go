@@ -352,7 +352,7 @@ func initialize(beadsDirSetting string) error {
 	v.SetDefault("sync.require_confirmation_on_mass_delete", false)
 
 	v.SetDefault("metrics.disabled", false)
-	v.SetDefault("metrics.endpoint", "https://gastownhall-eventsapi.com/mp/collect")
+	v.SetDefault("metrics.endpoint", "")
 
 	// Federation configuration (optional Dolt remote)
 	v.SetDefault("federation.remote", "")                          // e.g., dolthub://org/beads, gs://bucket/beads, s3://bucket/beads, az://account.blob.core.windows.net/container/beads

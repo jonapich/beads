@@ -7,10 +7,7 @@ import (
 )
 
 func runBeadsVersionSyncCheck(root string) CheckResult {
-	return runBeadsVersionSyncCheckWithUV(
-		root,
-		versioncheck.CheckUVLockFreshness,
-	)
+	return runBeadsVersionSyncCheckWithUV(root, nil)
 }
 
 func runBeadsVersionSyncCheckWithUV(

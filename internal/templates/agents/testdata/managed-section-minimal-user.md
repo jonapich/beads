@@ -1,4 +1,4 @@
-<!-- BEGIN BEADS INTEGRATION v:1 profile:minimal hash:52c58e00 -->
+<!-- BEGIN BEADS INTEGRATION v:1 profile:minimal hash:59c8c71a -->
 ## Beads Issue Tracker
 
 This Beads block applies only in beads repositories: repositories that use **bd (beads)** for issue tracking, with a `.beads/` directory. Ignore it in any other repository. In a beads repository, run `bd prime` to see full workflow context and commands.
@@ -18,7 +18,7 @@ bd close <id>         # Complete work
 - Run `bd prime` for detailed command reference and session close protocol
 - In a beads repository, use `bd remember` for durable project facts — not per-tool memory files, which fragment across accounts; keep per-operator preferences in your harness's own memory
 
-**Architecture in one line:** issues live in a local Dolt DB; sync uses `refs/dolt/data` on your git remote; `.beads/issues.jsonl` is a passive export. See https://github.com/gastownhall/beads/blob/main/docs/core-concepts/sync-concepts.md for details and anti-patterns.
+**Architecture in one line:** issues live in a local Dolt DB; sync uses `refs/dolt/data` on your git remote; `.beads/issues.jsonl` is a passive export. See https://github.com/jonapich/beads/blob/main/docs/core-concepts/sync-concepts.md for details and anti-patterns.
 
 ## Agent Context Profiles
 

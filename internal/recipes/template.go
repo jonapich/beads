@@ -6,7 +6,7 @@ import "fmt"
 // This content is written to all file-based recipes.
 const Template = `# Beads Issue Tracking
 
-This project uses [Beads (bd)](https://github.com/gastownhall/beads) for issue tracking.
+This project uses [Beads (bd)](https://github.com/jonapich/beads) for issue tracking.
 
 ## Core Rules
 
@@ -61,7 +61,7 @@ Run ` + "`bd prime`" + ` to get complete workflow documentation in AI-optimized 
 ` + "`bd prime`" + ` is the single source of truth for operational commands and session workflow.
 
 For detailed docs: see AGENTS.md, the beads quickstart
-(https://github.com/gastownhall/beads/blob/main/docs/getting-started/quickstart.md), or run ` + "`bd --help`" + `
+(https://github.com/jonapich/beads/blob/main/docs/getting-started/quickstart.md), or run ` + "`bd --help`" + `
 `
 
 // CopilotInstructionsTemplate is the repository instructions file used by the

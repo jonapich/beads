@@ -1,0 +1,67 @@
+# Paths this fork deliberately does not carry. One regular expression per line,
+# matched against repo-relative paths with forward slashes. Lines starting with
+# # are comments.
+#
+# scripts/fork/sync-upstream.ps1 applies this list after merging the original
+# project, so anything it adds or changes under these paths is dropped.
+
+# Bazel: builds and tests run through docker-bake.hcl instead.
+(^|/)BUILD\.bazel$
+\.bzl$
+^\.bazelrc$
+^\.bazelversion$
+^\.bazelignore$
+^MODULE\.bazel(\.lock)?$
+^gazelle\.go\.work$
+^Makefile$
+^tools/(bazel|cc_toolchain|nogo|rbe)/
+^third_party/
+^platforms/
+
+# CI and automation that targets the original project's infrastructure.
+^\.github/(workflows|actions|scripts|pages-redirect)/
+^\.github/(allowed-actions\.json|bazel-farm-allowlist\.txt|CODEOWNERS)$
+^scripts/bazel-autofix-push\.sh$
+^scripts/ci/bazel-
+^scripts/ci/package-(bazel-bd|npm)\.sh$
+
+# Anything that runs automatically when the repo is opened or a git command
+# runs. A sync must never be able to add one of these.
+^\.claude/settings\.json$
+^\.claude/hooks/
+^\.mcp\.json$
+^\.githooks/
+^\.pre-commit-config\.yaml$
+^scripts/install-hooks\.sh$
+^scripts/pre-push-suite\.sh$
+^tests/hook_timeout_backends/
+
+# Repo policy tests. They police the CI and Bazel setup removed above.
+^scripts/[^/]+_test\.go$
+
+# Distribution channels this fork does not publish to.
+^npm-package/
+^winget/
+^integrations/beads-mcp/
+^install\.ps1$
+^\.goreleaser\.yml$
+^\.beads/formulas/beads-release\.formula\.toml$
+^scripts/install\.sh$
+^scripts/release\.sh$
+^scripts/update-winget\.sh$
+^scripts/check-winget-portable-alias\.sh$
+^scripts/check-go-install-guidance\.sh$
+^scripts/sign-windows\.sh$
+^scripts/gen-winres\.sh$
+
+# Release tooling and docs for channels this fork does not publish to.
+^RELEASING\.md$
+^engdocs/RELEASING\.md$
+^engdocs/staged-for-removal/RELEASING\.md$
+^scripts/bump-version\.sh$
+^scripts/update-versions\.sh$
+^scripts/check-versions(\.sh|/)
+
+# Migration corpus: it downloads the original project's release binaries.
+^scripts/migration-test/
+^tests/migration/

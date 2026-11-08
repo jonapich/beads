@@ -184,7 +184,11 @@ func runMetricsStatus(cmd *cobra.Command) {
 	fmt.Fprintln(out, "collect your issues, paths, remotes, identity, or any text you type. Seeing")
 	fmt.Fprintln(out, "real usage patterns is how we decide what to improve next — thank you for")
 	fmt.Fprintln(out, "helping make bd better.")
-	fmt.Fprintf(out, "\nWhere it goes: %s\n", resolveMetricsEndpoint())
+	where := resolveMetricsEndpoint()
+	if where == "" {
+		where = "nowhere (no collector configured)"
+	}
+	fmt.Fprintf(out, "\nWhere it goes: %s\n", where)
 	fmt.Fprintln(out, "\n  See real examples:  bd metrics example")
 	if effective {
 		fmt.Fprintln(out, "  Turn off:           bd metrics off")

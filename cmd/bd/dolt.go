@@ -503,7 +503,7 @@ func printAncestorPKMismatchGuidance(err error) {
 	fmt.Fprintln(w, "       bd import /tmp/beads-local.jsonl")
 	fmt.Fprintln(w, "")
 	fmt.Fprintln(w, "Full playbook (and how to prevent this during upgrades):")
-	fmt.Fprintln(w, "  https://github.com/gastownhall/beads/blob/main/docs/recovery/init-safety.md#pk-fork-refused")
+	fmt.Fprintln(w, "  https://github.com/jonapich/beads/blob/main/docs/recovery/init-safety.md#pk-fork-refused")
 }
 
 // isRemoteDanglingReferenceErr reports Dolt's refusal to update a remote that
@@ -550,7 +550,7 @@ func printRemoteDanglingReferenceGuidance(ctx context.Context, st storage.DoltSt
 	fmt.Fprintln(w, "       https://github.com/dolthub/dolt/issues")
 	fmt.Fprintln(w, "")
 	fmt.Fprintln(w, "Full playbook:")
-	fmt.Fprintln(w, "  https://github.com/gastownhall/beads/blob/main/docs/recovery/sync-failures.md#push-fails-with-found-dangling-references")
+	fmt.Fprintln(w, "  https://github.com/jonapich/beads/blob/main/docs/recovery/sync-failures.md#push-fails-with-found-dangling-references")
 }
 
 // printDanglingHeadStep prints step 1 of the dangling-reference guidance:

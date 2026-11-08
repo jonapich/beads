@@ -15,40 +15,14 @@ func TestRepositoryReleaseVersionsMatch(t *testing.T) {
 	if err != nil {
 		t.Fatalf("repository release metadata is inconsistent: %v", err)
 	}
-	if report.CheckedSources != 12 {
-		t.Fatalf("checked sources = %d, want 12", report.CheckedSources)
+	if report.CheckedSources != 9 {
+		t.Fatalf("checked sources = %d, want 9", report.CheckedSources)
 	}
-	hookEntries, err := os.ReadDir(filepath.Join(root, ".githooks"))
-	if err != nil {
-		t.Fatal(err)
+	if report.CheckedHookMarkers != 0 {
+		t.Fatalf("checked hook markers = %d, want 0 (this fork tracks no .githooks)", report.CheckedHookMarkers)
 	}
-	expectedHookMarkers := 0
-	for _, entry := range hookEntries {
-		if strings.HasPrefix(entry.Name(), ".") {
-			continue
-		}
-		path := filepath.Join(root, ".githooks", entry.Name())
-		info, statErr := os.Stat(path)
-		if statErr != nil {
-			t.Fatal(statErr)
-		}
-		if info.Mode().IsRegular() {
-			expectedHookMarkers += 2
-		}
-	}
-	if report.CheckedHookMarkers != expectedHookMarkers {
-		t.Fatalf(
-			"checked hook markers = %d, want %d",
-			report.CheckedHookMarkers,
-			expectedHookMarkers,
-		)
-	}
-	if len(report.Sources) != 13+expectedHookMarkers {
-		t.Fatalf(
-			"reported sources = %d, want %d (twelve release metadata checks, uv.lock, and tracked hook markers)",
-			len(report.Sources),
-			13+expectedHookMarkers,
-		)
+	if len(report.Sources) != 9 {
+		t.Fatalf("reported sources = %d, want 9 release metadata checks", len(report.Sources))
 	}
 }
 
@@ -56,13 +30,10 @@ func TestCheckCoversEveryReleaseSource(t *testing.T) {
 	// Keyed by description: winres.json contributes several gated fields from
 	// a single path, so the path alone is no longer a unique key.
 	expected := map[string]string{
-		"MCP pyproject.toml":                    "integrations/beads-mcp/pyproject.toml",
-		"MCP __init__.py":                       "integrations/beads-mcp/src/beads_mcp/__init__.py",
 		"Claude plugin.json":                    "plugins/beads/.claude-plugin/plugin.json",
 		"Codex plugin.json":                     "plugins/beads/.codex-plugin/plugin.json",
 		"Copilot plugin.json":                   "plugins/beads/.copilot-plugin/plugin.json",
 		"Claude marketplace.json":               ".claude-plugin/marketplace.json",
-		"npm package.json":                      "npm-package/package.json",
 		"winres.json file_version":              "cmd/bd/winres/winres.json",
 		"winres.json product_version":           "cmd/bd/winres/winres.json",
 		"winres.json FileVersion":               "cmd/bd/winres/winres.json",
@@ -251,62 +222,9 @@ func TestCheckRejectsMissingMalformedOrAmbiguousMetadata(t *testing.T) {
 	}{
 		{
 			name: "missing metadata",
-			path: "integrations/beads-mcp/src/beads_mcp/__init__.py",
+			path: "plugins/beads/.codex-plugin/plugin.json",
 			data: nil,
-			want: "MCP __init__.py:",
-		},
-		{
-			name: "duplicate project TOML field",
-			path: "integrations/beads-mcp/pyproject.toml",
-			data: []byte("[project]\nversion = \"1.1.0\"\nversion = \"1.1.0\"\n"),
-			want: "MCP pyproject.toml: parse TOML:",
-		},
-		{
-			name: "version in wrong TOML table",
-			path: "integrations/beads-mcp/pyproject.toml",
-			data: []byte("[tool.example]\nversion = \"1.1.0\"\n"),
-			want: "MCP pyproject.toml: non-empty string field [project].version not found",
-		},
-		{
-			name: "wrong-case TOML project table",
-			path: "integrations/beads-mcp/pyproject.toml",
-			data: []byte("[Project]\nversion = \"1.1.0\"\n"),
-			want: `MCP pyproject.toml: field [project] is ambiguous or uses non-exact casing: "Project"`,
-		},
-		{
-			name: "wrong-case TOML version field",
-			path: "integrations/beads-mcp/pyproject.toml",
-			data: []byte("[project]\nVersion = \"1.1.0\"\n"),
-			want: `MCP pyproject.toml: field [project].version is ambiguous or uses non-exact casing: "Version"`,
-		},
-		{
-			name: "case-alias TOML project tables",
-			path: "integrations/beads-mcp/pyproject.toml",
-			data: []byte(
-				"[project]\nversion = \"1.1.0\"\n" +
-					"[Project]\nversion = \"9.9.9\"\n",
-			),
-			want: `MCP pyproject.toml: field [project] is ambiguous or uses non-exact casing: "Project", "project"`,
-		},
-		{
-			name: "case-alias TOML version fields",
-			path: "integrations/beads-mcp/pyproject.toml",
-			data: []byte(
-				"[project]\nversion = \"1.1.0\"\nVersion = \"9.9.9\"\n",
-			),
-			want: `MCP pyproject.toml: field [project].version is ambiguous or uses non-exact casing: "Version", "version"`,
-		},
-		{
-			name: "nested Python assignment",
-			path: "integrations/beads-mcp/src/beads_mcp/__init__.py",
-			data: []byte("def f():\n    __version__ = \"1.1.0\"\n"),
-			want: "MCP __init__.py: found 0 module-level __version__",
-		},
-		{
-			name: "Python assignment inside multiline string",
-			path: "integrations/beads-mcp/src/beads_mcp/__init__.py",
-			data: []byte("payload = \"\"\"\n__version__ = \"1.1.0\"\n\"\"\"\n"),
-			want: "MCP __init__.py: found 0 module-level __version__",
+			want: "Codex plugin.json:",
 		},
 		{
 			name: "malformed JSON",
@@ -316,9 +234,9 @@ func TestCheckRejectsMissingMalformedOrAmbiguousMetadata(t *testing.T) {
 		},
 		{
 			name: "wrong-case JSON field",
-			path: "npm-package/package.json",
+			path: "plugins/beads/.codex-plugin/plugin.json",
 			data: []byte(`{"Version":"1.1.0"}`),
-			want: "npm package.json: field .version not found",
+			want: "Codex plugin.json: field .version not found",
 		},
 		{
 			name: "duplicate JSON field",
@@ -328,9 +246,9 @@ func TestCheckRejectsMissingMalformedOrAmbiguousMetadata(t *testing.T) {
 		},
 		{
 			name: "trailing JSON document",
-			path: "npm-package/package.json",
+			path: "plugins/beads/.codex-plugin/plugin.json",
 			data: []byte(`{"version":"1.1.0"} {}`),
-			want: "npm package.json: parse JSON: unexpected trailing value",
+			want: "Codex plugin.json: parse JSON: unexpected trailing value",
 		},
 		{
 			name: "duplicate marketplace plugins field",
@@ -339,27 +257,6 @@ func TestCheckRejectsMissingMalformedOrAmbiguousMetadata(t *testing.T) {
 				`{"plugins":[{"version":"1.1.0"}],"plugins":[{"version":"1.1.0"}]}`,
 			),
 			want: "Claude marketplace.json: field .plugins appears more than once",
-		},
-		{
-			name: "missing MCP lockfile",
-			path: "integrations/beads-mcp/uv.lock",
-			data: nil,
-			want: "MCP uv.lock (beads-mcp pin):",
-		},
-		{
-			name: "duplicate MCP lock package",
-			path: "integrations/beads-mcp/uv.lock",
-			data: []byte(
-				"[[package]]\nname = \"beads-mcp\"\nversion = \"1.1.0\"\n" +
-					"[[package]]\nname = \"beads-mcp\"\nversion = \"1.1.0\"\n",
-			),
-			want: "MCP uv.lock (beads-mcp pin): found 2 beads-mcp package entries, want exactly one",
-		},
-		{
-			name: "wrong-case MCP lock name field",
-			path: "integrations/beads-mcp/uv.lock",
-			data: []byte("[[package]]\nName = \"beads-mcp\"\nversion = \"1.1.0\"\n"),
-			want: `MCP uv.lock (beads-mcp pin): field [[package]][0].name is ambiguous or uses non-exact casing: "Name"`,
 		},
 	}
 
@@ -388,31 +285,7 @@ func TestCheckRejectsMissingMalformedOrAmbiguousMetadata(t *testing.T) {
 	}
 }
 
-func TestCheckValidatesUVLockVersion(t *testing.T) {
-	root := writeFixture(t, "1.1.0")
-	lockPath := filepath.Join(root, "integrations", "beads-mcp", "uv.lock")
-	if err := os.WriteFile(
-		lockPath,
-		[]byte("[[package]]\nname = \"beads-mcp\"\nversion = \"9.9.9\"\n"),
-		0o644,
-	); err != nil {
-		t.Fatal(err)
-	}
-	_, err := Check(root)
-	if err == nil {
-		t.Fatal("stale MCP lock version unexpectedly passed")
-	}
-	if want := "MCP uv.lock (beads-mcp pin): 9.9.9 (expected 1.1.0)"; !strings.Contains(err.Error(), want) {
-		t.Fatalf("error = %q, want %q", err, want)
-	}
-
-	root = writeFixture(t, "1.1.0-rc.1")
-	if _, err := Check(root); err != nil {
-		t.Fatalf("PEP 440-normalized release-candidate lock version failed: %v", err)
-	}
-}
-
-func TestCheckUsesSemanticGoAndPythonScopes(t *testing.T) {
+func TestCheckUsesSemanticGoScopes(t *testing.T) {
 	root := writeFixture(t, "1.1.0")
 	if err := os.WriteFile(
 		filepath.Join(root, "cmd", "bd", "version.go"),
@@ -431,18 +304,6 @@ func TestCheckUsesSemanticGoAndPythonScopes(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "found 0 package-level Version string assignments") {
 		t.Fatalf("unexpected Go scope error: %v", err)
-	}
-
-	root = writeFixture(t, "1.1.0")
-	if err := os.WriteFile(
-		filepath.Join(root, "integrations", "beads-mcp", "src", "beads_mcp", "__init__.py"),
-		[]byte("__version__ = '1.1.0' # release version\n"),
-		0o644,
-	); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := Check(root); err != nil {
-		t.Fatalf("module-level Python assignment with trailing comment failed: %v", err)
 	}
 }
 
@@ -583,15 +444,10 @@ func writeFixtureAt(t *testing.T, root, version string) {
 		"go.mod":                     "module " + ModulePath + "\n\ngo 1.26\n",
 		"cmd/bd/version.go":          "package main\n\nvar Version = \"" + version + "\"\n",
 		"scripts/update-versions.sh": "#!/bin/sh\n",
-		"integrations/beads-mcp/pyproject.toml": "[project]\nversion = \"" +
-			version + "\"\n",
-		"integrations/beads-mcp/src/beads_mcp/__init__.py": "__version__ = \"" +
-			version + "\"\n",
 		"plugins/beads/.claude-plugin/plugin.json": `{"version":"` + version + `"}`,
 		"plugins/beads/.codex-plugin/plugin.json":  `{"version":"` + version + `"}`,
 		".claude-plugin/marketplace.json": `{"plugins":[{"version":"` +
 			version + `"}]}`,
-		"npm-package/package.json":                  `{"version":"` + version + `"}`,
 		"plugins/beads/.copilot-plugin/plugin.json": `{"version":"` + version + `"}`,
 		"cmd/bd/winres/winres.json": `{"RT_VERSION":{"#1":{"0000":{` +
 			`"fixed":{"file_version":"` + baseVersion(version) +
@@ -603,9 +459,6 @@ func writeFixtureAt(t *testing.T, root, version string) {
 			"  <assemblyIdentity\n    type=\"win32\"\n    name=\"beads.bd\"\n" +
 			"    version=\"" + assemblyIdentityVersion(version) + "\"\n" +
 			"    processorArchitecture=\"*\"/>\n</assembly>\n",
-		"integrations/beads-mcp/uv.lock": "version = 1\nrevision = 3\n\n" +
-			"[[package]]\nname = \"beads-mcp\"\nversion = \"" +
-			normalizePythonVersion(version) + "\"\n",
 		".githooks/pre-push": "# --- BEGIN BEADS INTEGRATION v" + version + " ---\n" +
 			"body\n# --- END BEADS INTEGRATION v" + version + " ---\n",
 	}

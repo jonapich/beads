@@ -39,22 +39,11 @@ func EnsureUserConfigDefaults() error {
 		return fmt.Errorf("ensure user config: parse %s: %w", path, err)
 	}
 
-	needDisabled := !userConfigHasLeaf(&root, "metrics", "disabled")
-	needEndpoint := !userConfigHasLeaf(&root, "metrics", "endpoint")
-
-	if !needDisabled && !needEndpoint {
+	if userConfigHasLeaf(&root, "metrics", "disabled") {
 		return nil
 	}
-
-	if needDisabled {
-		if err := config.SetUserYamlConfig("metrics.disabled", "false"); err != nil {
-			return fmt.Errorf("ensure user config: set metrics.disabled: %w", err)
-		}
-	}
-	if needEndpoint {
-		if err := config.SetUserYamlConfig("metrics.endpoint", DefaultEndpoint); err != nil {
-			return fmt.Errorf("ensure user config: set metrics.endpoint: %w", err)
-		}
+	if err := config.SetUserYamlConfig("metrics.disabled", "false"); err != nil {
+		return fmt.Errorf("ensure user config: set metrics.disabled: %w", err)
 	}
 	return nil
 }
@@ -63,7 +52,7 @@ func writeUserConfigBootstrap(path string) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return fmt.Errorf("ensure user config: mkdir %s: %w", filepath.Dir(path), err)
 	}
-	body := []byte("metrics:\n  disabled: false\n  endpoint: " + DefaultEndpoint + "\n")
+	body := []byte("metrics:\n  disabled: false\n")
 	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600) //nolint:gosec // path is from config.UserConfigYamlPath
 	if err != nil {
 		if errors.Is(err, fs.ErrExist) {

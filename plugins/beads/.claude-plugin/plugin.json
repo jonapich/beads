@@ -6,9 +6,9 @@
     "name": "Steve Yegge",
     "url": "https://github.com/steveyegge"
   },
-  "repository": "https://github.com/gastownhall/beads",
+  "repository": "https://github.com/jonapich/beads",
   "license": "MIT",
-  "homepage": "https://github.com/gastownhall/beads",
+  "homepage": "https://github.com/jonapich/beads",
   "keywords": [
     "issue-tracker",
     "task-management",

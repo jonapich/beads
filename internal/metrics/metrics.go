@@ -18,7 +18,9 @@ const (
 	EnvDisableEventFlush = "BD_DISABLE_EVENT_FLUSH"
 	EnvDoNotTrack        = "DO_NOT_TRACK"
 
-	DefaultEndpoint = "https://gastownhall-eventsapi.com/mp/collect"
+	// DefaultEndpoint is empty: this fork runs no collector, so metrics stay
+	// off unless a user configures an endpoint of their own.
+	DefaultEndpoint = ""
 
 	// queuedEventExt is the extension the eventkit FileEmitter gives queued
 	// event batches in DataDir. Re-exported here (this file holds the fenced

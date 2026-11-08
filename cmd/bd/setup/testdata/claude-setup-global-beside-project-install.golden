@@ -23,7 +23,7 @@ Answer tersely.
 --- seed: created $ROOT/project/CLAUDE.md
 # My Project
 
-<!-- BEGIN BEADS INTEGRATION v:1 profile:minimal hash:6ffdf896 -->
+<!-- BEGIN BEADS INTEGRATION v:1 profile:minimal hash:cc101099 -->
 [managed section body: byte-identical to internal/templates/agents/testdata/managed-section-minimal.md]
 <!-- END BEADS INTEGRATION -->
 
@@ -50,7 +50,7 @@ Restart Claude Code for changes to take effect.
 
 Answer tersely.
 
-<!-- BEGIN BEADS INTEGRATION v:1 profile:minimal hash:52c58e00 -->
+<!-- BEGIN BEADS INTEGRATION v:1 profile:minimal hash:59c8c71a -->
 [managed section body: byte-identical to internal/templates/agents/testdata/managed-section-minimal-user.md]
 <!-- END BEADS INTEGRATION -->
 --- files: created $ROOT/home/.claude/settings.json

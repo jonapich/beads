@@ -17,15 +17,7 @@ This infrastructure is critical for debugging, auditing, and user support - it a
   - Compilation: Pass info to Go compiler via `-X` ldflags
   - Runtime: Resolve functions in version.go retrieve and display the info
 
-- **Installation Methods**: The build configuration enables multiple installation paths while maintaining version consistency:
-  - `make install` - Used by developers building from source
-  - `go install ./cmd/bd` - Direct Go installation with embedded ldflag injection
-  - GitHub releases - Goreleaser-built binaries for all platforms
-  - Homebrew - Pre-built binaries installed via `brew install beads`
-  - npm - Node.js package that downloads pre-built binaries via postinstall hook
-  - `./scripts/install.sh` - User-friendly build-from-source helper
-
-- **Release Automation**: Goreleaser configuration integrates with GitHub Actions and the release process documented in `@/RELEASING.md`, ensuring released binaries have full version info.
+- **Installation**: This fork has one install path. `docker buildx bake` builds `bd.exe` from a reviewed checkout and injects version info through ldflags.
 
 ### Core Implementation
 

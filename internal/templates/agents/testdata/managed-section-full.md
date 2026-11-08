@@ -1,4 +1,4 @@
-<!-- BEGIN BEADS INTEGRATION v:1 profile:full hash:bacef91e -->
+<!-- BEGIN BEADS INTEGRATION v:1 profile:full hash:0bcd9332 -->
 ## Issue Tracking with bd (beads)
 
 **IMPORTANT**: This project uses **bd (beads)** for ALL issue tracking. Do NOT use markdown TODOs, task lists, or other tracking methods.
@@ -81,7 +81,7 @@ bd stores issue history in Dolt:
 - Use `bd dolt push`/`bd dolt pull` for remote sync
 - Do not treat `.beads/issues.jsonl` as the sync protocol
 
-**Architecture in one line:** issues live in a local Dolt DB; sync uses `refs/dolt/data` on your git remote; `.beads/issues.jsonl` is a passive export. See https://github.com/gastownhall/beads/blob/main/docs/core-concepts/sync-concepts.md for details and anti-patterns.
+**Architecture in one line:** issues live in a local Dolt DB; sync uses `refs/dolt/data` on your git remote; `.beads/issues.jsonl` is a passive export. See https://github.com/jonapich/beads/blob/main/docs/core-concepts/sync-concepts.md for details and anti-patterns.
 
 ### Important Rules
 
@@ -93,7 +93,7 @@ bd stores issue history in Dolt:
 - ❌ Do NOT use external issue trackers
 - ❌ Do NOT duplicate tracking systems
 
-For more details, see README.md and https://github.com/gastownhall/beads/blob/main/docs/getting-started/quickstart.md.
+For more details, see README.md and https://github.com/jonapich/beads/blob/main/docs/getting-started/quickstart.md.
 
 ## Agent Context Profiles
 

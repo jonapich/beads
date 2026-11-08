@@ -13,7 +13,7 @@ A simple Python script demonstrating how an AI agent can use bd to manage tasks.
 ## Prerequisites
 
 - Python 3.7+
-- bd installed: `curl -fsSL https://raw.githubusercontent.com/gastownhall/beads/main/scripts/install.sh | bash`
+- bd installed: `docker buildx bake  # run in a clone of https://github.com/jonapich/beads`
 - A beads database initialized: `bd init`
 
 ## Usage

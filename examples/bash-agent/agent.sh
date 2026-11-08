@@ -39,7 +39,7 @@ AGENT_NAME="${BEADS_AGENT_NAME:-bash-agent-$$}"
 # Check if bd is installed
 if ! command -v bd &> /dev/null; then
     log_error "bd is not installed"
-    echo "Install with: curl -fsSL https://raw.githubusercontent.com/gastownhall/beads/main/scripts/install.sh | bash"
+    echo "Install with: docker buildx bake  # run in a clone of https://github.com/jonapich/beads"
     exit 1
 fi
 

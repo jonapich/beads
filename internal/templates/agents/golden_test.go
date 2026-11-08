@@ -61,12 +61,12 @@ func TestManagedSectionGolden(t *testing.T) {
 // hand.
 func TestManagedSectionHashes(t *testing.T) {
 	want := map[string]string{
-		"minimal":           "6ffdf896",
-		"minimal-no-remote": "cdcea925",
-		"minimal-user":      "52c58e00",
-		"full":              "bacef91e",
-		"full-no-remote":    "9c890b20",
-		"full-user":         "0d9cad1f",
+		"minimal":           "cc101099",
+		"minimal-no-remote": "e1b6662a",
+		"minimal-user":      "59c8c71a",
+		"full":              "0bcd9332",
+		"full-no-remote":    "ae233718",
+		"full-user":         "1dd28593",
 	}
 	for _, v := range managedSectionVariants {
 		got := CurrentHashWithOpts(v.profile, v.opts)

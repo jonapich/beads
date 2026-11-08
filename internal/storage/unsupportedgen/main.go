@@ -173,7 +173,7 @@ func (s importSet) add(pkgPath string) string {
 // instantiation (this package's one case is storage.Iter[T]), reflect leaks
 // the type argument's FULL import path into both String() and Name() rather
 // than the short package name every other case gets
-// ("storage.Iter[github.com/steveyegge/beads/internal/types.Issue]" instead of
+// ("storage.Iter[github.com/jonapich/beads/internal/types.Issue]" instead of
 // "storage.Iter[types.Issue]"). This function walks the type structurally so
 // composite types are built from already-short recursive calls, and for the
 // generic-name case specifically, desanitizes the leaked argument with

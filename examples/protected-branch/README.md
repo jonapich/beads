@@ -249,7 +249,7 @@ jobs:
           fetch-depth: 0
 
       - name: Install bd
-        run: curl -fsSL https://raw.githubusercontent.com/gastownhall/beads/main/scripts/install.sh | bash
+        run: docker buildx bake  # run in a clone of https://github.com/jonapich/beads
 
       - name: Check for changes
         id: check

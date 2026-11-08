@@ -53,16 +53,6 @@ type UVLockChecker func(root string) (available bool, err error)
 
 var releaseSources = []source{
 	{
-		path:        "integrations/beads-mcp/pyproject.toml",
-		description: "MCP pyproject.toml",
-		read:        readProjectTOMLVersion,
-	},
-	{
-		path:        "integrations/beads-mcp/src/beads_mcp/__init__.py",
-		description: "MCP __init__.py",
-		read:        readPythonModuleVersion,
-	},
-	{
 		path:        "plugins/beads/.claude-plugin/plugin.json",
 		description: "Claude plugin.json",
 		read:        readTopLevelJSONVersion,
@@ -76,11 +66,6 @@ var releaseSources = []source{
 		path:        ".claude-plugin/marketplace.json",
 		description: "Claude marketplace.json",
 		read:        readMarketplaceJSONVersion,
-	},
-	{
-		path:        "npm-package/package.json",
-		description: "npm package.json",
-		read:        readTopLevelJSONVersion,
 	},
 	// update-versions.sh bumps this one too, but it was never gated before —
 	// so a drifted copilot manifest (the same drift class that carried stale
@@ -226,34 +211,6 @@ func Check(root string) (Report, error) {
 		}
 		report.Sources = append(report.Sources, result)
 	}
-
-	// uv.lock is not one of the six published metadata surfaces, but the
-	// existing release gate also requires its local beads-mcp package pin to
-	// match. Preserve that assertion without expanding the release inventory.
-	lockExpected := normalizePythonVersion(canonical)
-	lockVersion, lockErr := readUVLockPackageVersion(
-		filepath.Join(root, "integrations", "beads-mcp", "uv.lock"),
-	)
-	lockResult := SourceResult{
-		Description: "MCP uv.lock (beads-mcp pin)",
-		Version:     lockVersion,
-		Expected:    lockExpected,
-	}
-	switch {
-	case lockErr != nil:
-		lockResult.Problem = lockErr.Error()
-		problems = append(
-			problems,
-			fmt.Sprintf("%s: %v (expected %s)", lockResult.Description, lockErr, lockExpected),
-		)
-	case lockVersion != lockExpected:
-		lockResult.Problem = fmt.Sprintf("version is %s", lockVersion)
-		problems = append(
-			problems,
-			fmt.Sprintf("%s: %s (expected %s)", lockResult.Description, lockVersion, lockExpected),
-		)
-	}
-	report.Sources = append(report.Sources, lockResult)
 
 	hookResults, hookProblems := checkTrackedHookMarkers(root, canonical)
 	report.CheckedHookMarkers = len(hookResults)

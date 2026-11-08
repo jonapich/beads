@@ -4,13 +4,9 @@
 
 **Platforms:** macOS, Linux, Windows, FreeBSD
 
-[![License](https://img.shields.io/github/license/gastownhall/beads)](LICENSE)
-[![Go Report Card](https://goreportcard.com/badge/github.com/steveyegge/beads)](https://goreportcard.com/report/github.com/steveyegge/beads)
-[![Release](https://img.shields.io/github/v/release/gastownhall/beads)](https://github.com/gastownhall/beads/releases)
-[![npm version](https://img.shields.io/npm/v/@beads/bd)](https://www.npmjs.com/package/@beads/bd)
-[![PyPI](https://img.shields.io/pypi/v/beads-mcp)](https://pypi.org/project/beads-mcp/)
+> **This is a personal fork of gastownhall/beads.** It publishes no releases or packages and builds only from reviewed source with Docker. Changes from the original arrive only through `scripts/fork/sync-upstream.ps1`.
 
-**Docs:** https://beads.gascity.com/
+**Docs:** https://github.com/jonapich/beads/tree/main/docs
 
 Beads provides a persistent, structured memory for coding agents. It replaces messy markdown plans with a dependency-aware graph, allowing agents to handle long-horizon tasks without losing context.
 
@@ -28,7 +24,7 @@ flowchart LR
 
 ```bash
 # Install beads CLI (system-wide - don't clone this repo into your project)
-curl -fsSL https://raw.githubusercontent.com/gastownhall/beads/main/scripts/install.sh | bash
+docker buildx bake  # run in a clone of https://github.com/jonapich/beads
 
 # Initialize in YOUR project
 cd your-project
@@ -95,14 +91,16 @@ Beads supports hierarchical IDs for epics:
 
 ## 📦 Installation
 
-```bash
-brew install beads           # macOS / Linux (recommended)
-npm install -g @beads/bd     # Node.js users
+Build `bd` from a checkout you have reviewed. Git and Docker are the only tools you need:
+
+```powershell
+$env:BD_COMMIT = git rev-parse HEAD
+$env:BD_BRANCH = git branch --show-current
+docker buildx bake
+Copy-Item dist\windows-amd64\bd.exe $HOME\.local\bin\
 ```
 
-**Other methods:** [install script](docs/getting-started/installation.md#quick-install-script-all-platforms) | [go install](docs/getting-started/installation.md#a-note-on-go-install-capability) | [from source](docs/getting-started/installation.md#build-dependencies-contributors-only) | [Windows](docs/getting-started/installation.md#windows-11) | [Arch AUR](docs/getting-started/installation.md#linux)
-
-**Requirements:** macOS, Linux, Windows, or FreeBSD. See [docs/getting-started/installation.md](docs/getting-started/installation.md) for complete installation guide.
+See [docs/getting-started/installation.md](docs/getting-started/installation.md) for the complete guide.
 
 **Upgrading?** Replacing the binary is not always the whole story. Short
 version: sync remote-backed databases with your current `bd`, back up with
@@ -111,7 +109,7 @@ version: sync remote-backed databases with your current `bd`, back up with
 migration on a remote-backed database, exactly one designated clone runs
 `bd migrate schema` and `bd dolt push`; other clones install the new
 binary and run `bd bootstrap`. See the full
-[upgrade guide](https://beads.gascity.com/getting-started/upgrading)
+[upgrade guide](https://github.com/jonapich/beads/blob/main/docs/getting-started/upgrading.md)
 or [docs/getting-started/installation.md](docs/getting-started/installation.md#updating-bd).
 
 ### Security And Verification
@@ -140,11 +138,7 @@ the replicated database; the workspace settings API rejects `mail.delegate`.
 Mail delegation also ignores project `.beads/config.yaml`; only shell environment
 variables and user-global YAML can select the delegate.
 
-Before trusting any downloaded binary, verify its checksum against the release `checksums.txt`.
-
-The install scripts verify release checksums before install. For manual installs, do this verification yourself before first run.
-
-On macOS, `scripts/install.sh` preserves the downloaded signature by default. Local ad-hoc re-signing is explicit opt-in via `BEADS_INSTALL_RESIGN_MACOS=1`.
+This fork ships no binaries. Every input to the build is pinned in the `Dockerfile`, and `docker buildx bake guard` fails if anything in the tree would fetch from the original project's infrastructure.
 
 See [docs/reference/antivirus.md](docs/reference/antivirus.md) for Windows AV false-positive guidance and verification workflow.
 
@@ -419,6 +413,6 @@ This is useful for:
 
 ## 📝 Documentation
 
-* [Documentation site](https://beads.gascity.com/) | [Installing](docs/getting-started/installation.md) | [Sync Concepts](docs/core-concepts/sync-concepts.md) | [Agent Setup](docs/getting-started/ide-setup.md) | [Copilot CLI Setup](docs/integrations/copilot-cli.md) | [Copilot VS Code MCP](docs/integrations/github-copilot.md) | [Articles](ARTICLES.md) | [Sync Branch Mode](docs/reference/protected-branches.md) | [Troubleshooting](docs/reference/troubleshooting.md) | [FAQ](docs/reference/faq.md)
+* [Documentation site](https://github.com/jonapich/beads/tree/main/docs) | [Installing](docs/getting-started/installation.md) | [Sync Concepts](docs/core-concepts/sync-concepts.md) | [Agent Setup](docs/getting-started/ide-setup.md) | [Copilot CLI Setup](docs/integrations/copilot-cli.md) | [Copilot VS Code MCP](docs/integrations/github-copilot.md) | [Articles](ARTICLES.md) | [Sync Branch Mode](docs/reference/protected-branches.md) | [Troubleshooting](docs/reference/troubleshooting.md) | [FAQ](docs/reference/faq.md)
 * Contributing: [CONTRIBUTING.md](CONTRIBUTING.md) (Bazel builds and tests beads: install [Bazelisk](https://github.com/bazelbuild/bazelisk), then `make test`) | [Roadmap](ROADMAP.md) | [Contributor agent instructions](AGENTS.md)
 * [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/gastownhall/beads)

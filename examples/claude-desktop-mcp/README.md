@@ -14,15 +14,7 @@ An MCP server that exposes bd functionality to Claude Desktop and other MCP clie
 
 ## Quick Start
 
-Install the beads MCP server:
-
-```bash
-# Using uv (recommended)
-uv tool install beads-mcp
-
-# Or using pip
-pip install beads-mcp
-```
+This fork does not build or publish `beads-mcp`. Install it from a source you have reviewed.
 
 Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS):
 

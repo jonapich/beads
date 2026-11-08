@@ -16,7 +16,7 @@ import (
 
 // EngineWontOpenRecoveryURL is the preservation-first runbook for a database
 // the engine cannot open. test/docsync pins the heading it deep-links.
-const EngineWontOpenRecoveryURL = "https://github.com/gastownhall/beads/blob/main/docs/recovery/database-corruption.md#engine-wont-open"
+const EngineWontOpenRecoveryURL = "https://github.com/jonapich/beads/blob/main/docs/recovery/database-corruption.md#engine-wont-open"
 
 // unopenableDatabaseFix is the Fix for a local store that exists but did not
 // open. A failed open is often configuration, not corruption, and doctor

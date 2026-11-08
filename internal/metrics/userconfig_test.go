@@ -58,9 +58,6 @@ func TestEnsureUserConfigDefaults_CreatesMissingFile(t *testing.T) {
 	if got := metricsLeaf(t, parsed, "disabled"); got != false {
 		t.Errorf("metrics.disabled = %v, want false", got)
 	}
-	if got := metricsLeaf(t, parsed, "endpoint"); got != DefaultEndpoint {
-		t.Errorf("metrics.endpoint = %v, want %q", got, DefaultEndpoint)
-	}
 }
 
 func TestEnsureUserConfigDefaults_AddsMissingMetricsBlock(t *testing.T) {
@@ -82,9 +79,6 @@ func TestEnsureUserConfigDefaults_AddsMissingMetricsBlock(t *testing.T) {
 	}
 	if got := metricsLeaf(t, parsed, "disabled"); got != false {
 		t.Errorf("metrics.disabled = %v, want false", got)
-	}
-	if got := metricsLeaf(t, parsed, "endpoint"); got != DefaultEndpoint {
-		t.Errorf("metrics.endpoint = %v, want %q", got, DefaultEndpoint)
 	}
 }
 

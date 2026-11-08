@@ -27,6 +27,8 @@ var arrivalSeqWriters = map[string]map[string]bool{
 	"issueops/journal.go": {"stampArrivalSeqInTx": true, "healEventSeqCounter": true},
 	// The CLI-bundle substitute for migration 0073.
 	"schema/cli_migrations.go": {"": true},
+	// Not SQL: a description string that happens to contain "create".
+	"historyoffequiv/historyoffequiv.go": {"": true},
 }
 
 // sqlWriteVerbRe matches a statement that changes data or schema.

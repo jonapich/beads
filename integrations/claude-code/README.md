@@ -6,7 +6,7 @@ Slash command for converting [Claude Code](https://docs.anthropic.com/en/docs/cl
 
 ```bash
 # Install beads
-curl -fsSL https://raw.githubusercontent.com/gastownhall/beads/main/scripts/install.sh | bash
+docker buildx bake  # run in a clone of https://github.com/jonapich/beads
 
 # Install hooks (auto-injects workflow context on session start)
 bd setup claude

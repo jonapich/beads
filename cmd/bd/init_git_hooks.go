@@ -369,7 +369,7 @@ func printJJAliasInstructions() {
 	fmt.Printf("  %s\n", ui.RenderAccent("[aliases]"))
 	fmt.Printf("  %s\n", ui.RenderAccent(`push = ["util", "exec", "--", "sh", "-c", "bd dolt commit && bd dolt push && jj git push \"$@\"", ""]`))
 	fmt.Printf("\nThen use %s instead of %s\n\n", ui.RenderAccent("jj push"), ui.RenderAccent("jj git push"))
-	fmt.Printf("For more details, see: https://github.com/gastownhall/beads/blob/main/docs/reference/git-integration.md#branchless-workflows-jujutsu--jj\n\n")
+	fmt.Printf("For more details, see: https://github.com/jonapich/beads/blob/main/docs/reference/git-integration.md#branchless-workflows-jujutsu--jj\n\n")
 }
 
 // initHooksContext keeps the selected Git project separate from Beads storage.

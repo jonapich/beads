@@ -186,9 +186,7 @@ Three options:
        bd init --server
      Requires a running 'dolt sql-server'. See docs/architecture/dolt.md.
 
-  3. Reinstall with embedded-mode support:
-       brew install beads                              # macOS / Linux
-       npm install -g @beads/bd                        # any platform with Node
-       curl -fsSL https://raw.githubusercontent.com/steveyegge/beads/main/scripts/install.sh | bash
+  3. Rebuild with embedded-mode support (requires Docker):
+       docker buildx bake                              # in a clone of jonapich/beads
 
 See docs/getting-started/installation.md for the full comparison.`

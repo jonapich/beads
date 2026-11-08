@@ -12,7 +12,7 @@ Common issues encountered when using bd and how to resolve them.
 **CLI (web environment or local):**
 - CLI can use server mode (default) or embedded mode (direct database access)
 - Embedded mode has 3-5 second sync delay
-- Web environment: Install via `npm install -g @beads/cli`
+- Web environment: Build `bd` from a clone of https://github.com/jonapich/beads and put it on your PATH
 - Web environment: Initialize via `bd init <prefix>` before first use
 
 **Most issues below apply to both interfaces** - the underlying database and server behavior is the same.
@@ -50,14 +50,7 @@ bd version
 
 **2. If version < 0.15.0, update bd:**
 ```bash
-# Via Homebrew (macOS/Linux)
-brew upgrade beads
-
-# Via install script
-curl -fsSL https://raw.githubusercontent.com/gastownhall/beads/main/scripts/install.sh | bash
-
-# Via package manager
-# See https://github.com/gastownhall/beads#installing
+docker buildx bake  # run in a clone of https://github.com/jonapich/beads
 ```
 
 **3. Restart Dolt server after upgrade:**
@@ -489,4 +482,4 @@ If the **bd-issue-tracking skill** provides incorrect guidance:
 - [CLI Reference](CLI_REFERENCE.md) - Live command reference pointers
 - [Dependencies Guide](DEPENDENCIES.md) - Understanding dependency types
 - [Workflows](WORKFLOWS.md) - Step-by-step workflow guides
-- [beads GitHub](https://github.com/gastownhall/beads) - Official documentation
+- [beads GitHub](https://github.com/jonapich/beads) - Official documentation

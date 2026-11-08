@@ -13,10 +13,10 @@ Usage:
   scripts/pr-preflight.sh --search "<topic keywords>" [--repo owner/name]
 
 Before changing or merging an existing PR:
-  scripts/pr-preflight.sh 123 --repo gastownhall/beads
+  scripts/pr-preflight.sh 123 --repo jonapich/beads
 
 Before implementing a feature/fix or opening a replacement PR:
-  scripts/pr-preflight.sh --search "dependency cycle detection" --repo gastownhall/beads
+  scripts/pr-preflight.sh --search "dependency cycle detection" --repo jonapich/beads
 
 What this checks:
   - whether an existing PR is external/cross-repository contributor work

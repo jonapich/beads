@@ -186,7 +186,7 @@ func seedEventsFromPreflipHistory(ctx context.Context, db DBConn) error {
 		fmt.Fprintf(preflipEventsNoticeOut,
 			"Warning: could not restore pre-upgrade audit events from %s; this clone's audit history is incomplete. "+
 				"Recover the rows from a clone or backup that can read that history, or repair the storage; "+
-				"see https://beads.gascity.com/getting-started/upgrading#pre-upgrade-audit-events-on-adopting-clones\n",
+				"see https://github.com/jonapich/beads/blob/main/docs/getting-started/upgrading.md#pre-upgrade-audit-events-on-adopting-clones\n",
 			strings.Join(unreadable, ", "))
 	}
 	if restored > 0 {

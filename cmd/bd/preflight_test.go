@@ -501,7 +501,7 @@ func TestRunVersionSyncCheck_BeadsUsesBuiltInAuthority(t *testing.T) {
 	}
 
 	if err := os.WriteFile(
-		filepath.Join(root, "npm-package", "package.json"),
+		filepath.Join(root, "plugins", "beads", ".codex-plugin", "plugin.json"),
 		[]byte(`{"version":"9.9.9"}`),
 		0o644,
 	); err != nil {
@@ -511,7 +511,7 @@ func TestRunVersionSyncCheck_BeadsUsesBuiltInAuthority(t *testing.T) {
 	if result.Passed {
 		t.Fatal("mismatched released metadata unexpectedly passed")
 	}
-	if !strings.Contains(result.Output, "npm package.json: 9.9.9 (expected 1.1.0)") {
+	if !strings.Contains(result.Output, "Codex plugin.json: 9.9.9 (expected 1.1.0)") {
 		t.Fatalf("unexpected mismatch output: %q", result.Output)
 	}
 	// A bare update-versions.sh re-run no-ops on a drifted file, so the check

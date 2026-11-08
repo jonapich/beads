@@ -6,4 +6,4 @@ listed in its routing table.
 
 If you are using `bd` to track work in your own project, see the user docs:
 [IDE and agent setup](docs/getting-started/ide-setup.md) and
-[https://beads.gascity.com/](https://beads.gascity.com/).
+[https://github.com/jonapich/beads/tree/main/docs](https://github.com/jonapich/beads/tree/main/docs).
