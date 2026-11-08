@@ -43,8 +43,7 @@ The script:
 
 ## Release Checklist Integration
 
-Before cutting a release, the release process (see [RELEASING.md](../RELEASING.md))
-requires:
+Before cutting a release, the release process requires:
 
 - [ ] Upgrade smoke tests pass (`make test-upgrade`)
 - [ ] Breaking changes documented in CHANGELOG.md with migration steps

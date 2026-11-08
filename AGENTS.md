@@ -2,12 +2,26 @@
 
 This file is for agents and humans **developing beads** (`bd`). If you are
 using `bd` to track work in your own project, read the user docs instead:
-[docs site](https://beads.gascity.com/) and
+[docs site](https://github.com/jonapich/beads/tree/main/docs) and
 [IDE and agent setup](docs/getting-started/ide-setup.md).
 
 <!-- Contributor-only file. Do not run `bd setup` or `bd init` against this
 checkout: they would inject the end-user beads integration block here. -->
 
+## This is a fork
+
+This checkout is jonapich/beads, a personal fork of gastownhall/beads kept
+separate to protect against supply chain attacks. All work stays in the fork.
+
+- Never write to the original project: no issues, PRs, comments, or pushes.
+- Changes from the original arrive only through `scripts/fork/sync-upstream.ps1`,
+  which leaves the merge uncommitted for review.
+- Nothing may fetch from, or send data to, the original project's
+  infrastructure. `docker buildx bake guard` enforces this. Paths the fork does
+  not carry are listed in `scripts/fork/removed-paths.txt`.
+- `engdocs/` still describes the original project's Bazel and CI setup, and the
+  contributor and maintainer policy below was written for the original project.
+  Treat both as background.
 Nested `AGENTS.md` files hold area-specific rules; the routing table at the
 end lists them. `CLAUDE.md` files are symlinks to their sibling `AGENTS.md`.
 
@@ -44,8 +58,8 @@ and not a substitute for the GitHub issue.
 - Before implementing work, opening a PR, or merging/closing a PR, run the PR
   preflight:
   ```bash
-  scripts/pr-preflight.sh --search "<topic keywords>" --repo gastownhall/beads
-  scripts/pr-preflight.sh <pr-number> --repo gastownhall/beads
+  scripts/pr-preflight.sh --search "<topic keywords>" --repo jonapich/beads
+  scripts/pr-preflight.sh <pr-number> --repo jonapich/beads
   ```
   The preflight is the agent gate for PR handling; do not rely on
   auto-discovery of CONTRIBUTING.md.
@@ -119,69 +133,24 @@ spans layers. See
 
 ## Build, test, lint
 
-Bazel is the build and test system: CI gates on the `bazel test` lanes in
-`.github/workflows/bazel.yml`, and nogo (lint + vet), gofmt and the repository
-guards exist only as Bazel targets. Install
-[Bazelisk](https://github.com/bazelbuild/bazelisk) as `bazel`; the pre-commit
-and pre-push hooks need it.
+Builds and tests run through `docker-bake.hcl`, so the host needs only Git and
+Docker. Do not install Go, Bazel, make, or compilers on the host.
 
-```bash
-make test          # bazel test //... --config=ci: the CI test lane (nogo, gofmt, guards, unit tests)
-make check         # testing.Short policy + make ci-pr-lint + make test
-make ci-pr-lint    # nogo lint + vet gate, native plus windows/darwin
-make check-docs    # bazel docsync + doc freshness, then the CLI flag check
-make bazel-sync    # after adding/removing/renaming Go files or changing imports/go.mod
-make install       # build and install bd to ~/.local/bin (canonical)
+```powershell
+docker buildx bake         # guard, then dist/windows-amd64/bd.exe
+docker buildx bake test    # the Go test suite, in a container
+docker buildx bake guard   # fails on references to the original project's infrastructure
+$env:BD_TEST_ARGS = "./internal/config/..."; docker buildx bake test   # one package
 ```
 
-- Each other tier has its own lane (`--config=integration`, `doltserver`,
-  `embedded`, ...); [engdocs/TESTING.md](engdocs/TESTING.md) lists the exact
-  command per lane and is the canonical source for test selection, design,
-  and PR-readiness gates.
-- Where actions run: contributors add `--config=fork-cache` (rbe-west's
-  anonymous read-only cache; nothing is uploaded), maintainers with an rbe-west
-  certificate `--config=remote-exec`, agent hosts whose `~/.bazelrc` names the
-  executor neither. Make yours the default with a `build --config=...` line in
-  the gitignored `.bazelrc.local`, or pass `BAZEL_FLAGS=...` to make.
-- Agents run tests only with `bazel test`, also while iterating on one
-  behavior:
-
-  ```bash
-  bazel test //cmd/bd:bd_test --config=ci --test_filter='^TestName$' --test_output=all
-  ```
-
-  A target also passes when the test never ran (a filter that matches
-  nothing, a skip, a file the configuration does not compile), so count a run
-  only when its log shows `--- PASS: TestName` and no `--- SKIP` for the test
-  or a `TestName/...` subtest: Go prints `--- PASS` for a test whose every
-  subtest skipped. "Check That the Test Ran" in
-  [engdocs/TESTING.md](engdocs/TESTING.md) names the tests `--config=ci` does
-  not run (Dolt-backed, `-short`-gated, integration-tagged, `TestEmbedded*`
-  and embedded-Dolt, files `BUILD.bazel` does not list) and the way into
-  each. An unchanged target returns its cached result, which is the same
-  evidence. Finish with `make test`.
-- Agents do not run `go test` (`./scripts/test.sh`, `make test-go`): CI does
-  not enforce it, it skips nogo, gofmt and the guards, and agent hosts may
-  refuse it. It stays a convenience for humans working offline. The exception
-  is regenerating golden files (`make corpus-regen`, `make githooks-regen`,
-  `BD_UPDATE_GOLDEN=1`), which Bazel cannot do: see "Regenerating Golden
-  Files" in [engdocs/TESTING.md](engdocs/TESTING.md).
-- **Do NOT** use `go build -o bd ./cmd/bd`, `go install ./cmd/bd`, or raw
-  `go run ./cmd/bd ...`: they bypass the canonical build path, leave stale
-  binaries, and raw `go run` misses the `gms_pure_go` tag. Use `make install`,
-  `./bd`, or `go run -tags gms_pure_go ./cmd/bd ...`.
-- All new features need tests.
+- A passing run says nothing about a test that never ran, such as one skipped or
+  matched by no filter. Count it only when the log shows `--- PASS: TestName`.
+  [engdocs/TESTING.md](engdocs/TESTING.md) covers test design.
 - **Never pollute a production database with test issues.** Use `t.TempDir()`
   in Go tests and a disposable working directory for manual `bd` experiments.
-- `make ci-pr-lint` must pass with zero issues; see
-  [engdocs/LINTING.md](engdocs/LINTING.md).
-- If BUILD files are out of sync and you cannot run `make bazel-sync`, CI
-  syncs them: on same-repo PRs the bazel-autofix workflow pushes the fix to
-  your branch (pull before pushing again); fork PRs get a comment with an
-  apply recipe.
+- All new features need tests.
 - If you changed behavior, update the user docs (`docs/`, via the
   `beads-docs` skill) or README in the same PR.
-
 ## Commits and PRs
 
 - Conventional Commits: `type(scope): summary` (`fix`, `feat`, `docs`,
@@ -194,16 +163,14 @@ make install       # build and install bd to ~/.local/bin (canonical)
   the bead ID, e.g. `(bd-abc)`, so `bd doctor` can detect orphaned issues.
 - Work on a feature branch and open a PR against `main`; direct pushes to
   `main` are reserved for releases and narrow operational fixes.
-- When the user asks to bump the version, use `./scripts/bump-version.sh`; the
-  full release process is in [RELEASING.md](RELEASING.md).
 
 ## Ending a session
 
 Do not push to `main`. Before handing off:
 
-1. Run the quality gates your change needs (`make test`, `make ci-pr-lint`,
-   and the other Bazel lanes [engdocs/TESTING.md](engdocs/TESTING.md)
-   selects). If gates are broken on `main`, report it as a P0 issue.
+1. Run the quality gates your change needs (`docker buildx bake test` and
+   `docker buildx bake guard`). If gates are broken on `main`, report it as a
+   P0 issue.
 2. Record follow-up work as GitHub issues (or ledger beads, for maintainers).
 3. Commit, push, or open a PR only when the person you are working for asked
    you to. Report changed files, validation run, and anything left open.
@@ -232,13 +199,11 @@ opens `$EDITOR`; use `bd update <id> --title/--description/--design/--acceptance
 | `engdocs/` (contributor and internals docs) | [engdocs/AGENTS.md](engdocs/AGENTS.md) |
 | `docs/` (the published user docs) | `.claude/skills/beads-docs/SKILL.md` |
 | Any Go test | [engdocs/TESTING.md](engdocs/TESTING.md) |
-| Lint failures or `.golangci.yml` | [engdocs/LINTING.md](engdocs/LINTING.md) |
 | A new storage operation or issueops role | [engdocs/ADDING_AN_ISSUEOPS_ROLE.md](engdocs/ADDING_AN_ISSUEOPS_ROLE.md) |
 | Schema migrations | [internal/storage/schema/migrations/README.md](internal/storage/schema/migrations/README.md) |
 | Dolt concurrency, server vs embedded mode | [engdocs/design/dolt-concurrency.md](engdocs/design/dolt-concurrency.md) |
 | Errors returned to users | [engdocs/ERROR_HANDLING.md](engdocs/ERROR_HANDLING.md) |
 | The `bd serve` HTTP surface | [engdocs/SERVE_RUNBOOK.md](engdocs/SERVE_RUNBOOK.md) |
 | A new example under `examples/` | `examples/README.md` — give the example its own README and link it there |
-| Releases and version bumps | [RELEASING.md](RELEASING.md) |
 | Scope questions | [engdocs/PROJECT_CHARTER.md](engdocs/PROJECT_CHARTER.md) |
 | Planned work and priorities | [ROADMAP.md](ROADMAP.md) |

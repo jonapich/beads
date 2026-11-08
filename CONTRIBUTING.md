@@ -67,7 +67,7 @@ area is reviewed first.
 
 ```bash
 # Clone the repository
-git clone https://github.com/gastownhall/beads
+git clone https://github.com/jonapich/beads
 cd beads
 
 # Read rbe-west's anonymous, read-only cache: everything CI already built and
@@ -270,7 +270,7 @@ or [feature request](https://github.com/gastownhall/beads/issues/new?template=fe
 The feature form asks for the motivation, impact, risk and compatibility,
 and verification plan up front, so a maintainer can accept the issue without
 a round trip. Questions go to
-[Discussions](https://github.com/gastownhall/beads/discussions).
+[Discussions](https://github.com/jonapich/beads/discussions).
 
 ## Your PR Will Not Be Overwritten
 
@@ -384,17 +384,12 @@ dlv debug ./cmd/bd -- create "Test issue"
 
 ## Release Process
 
-(For maintainers)
-
-Follow [RELEASING.md](RELEASING.md); it is the canonical release process.
-
-The pre-push version gate requires Go and validates each `v*` release tag
-against the checkout's canonical version. A batch containing different release
-versions is refused; push only the tag matching this checkout.
+This fork publishes no releases. Build `bd` from a reviewed checkout with
+`docker buildx bake`.
 
 `bd preflight` finds the nearest Beads source module by walking ancestor
 directories, checking both source markers and the module identity. Its version
-check runs directly in Go; `scripts/check-versions.sh` remains a Bash entrypoint.
+check runs directly in Go.
 
 ## Questions?
 

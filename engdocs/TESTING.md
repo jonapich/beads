@@ -94,7 +94,7 @@ per invocation (`bazel-profile-pure-build-wasm.json.gz`, `-build-pure`,
 timeout. To see where a slow lane spent its time:
 
 ```bash
-gh run download <run-id> -R gastownhall/beads -p 'bazel-profile-*' -D /tmp/prof
+gh run download <run-id> -R jonapich/beads -p 'bazel-profile-*' -D /tmp/prof
 ```
 
 Open a `.json.gz` in <https://ui.perfetto.dev> ("Open trace file"; it reads

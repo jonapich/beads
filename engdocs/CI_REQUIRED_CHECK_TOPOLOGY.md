@@ -769,7 +769,7 @@ Turning it on:
    and Merge queues "Read and write" (Pull requests is "Read and write"
    already); save, then accept the new permissions on the gastownhall
    installation (Organization settings, GitHub Apps, gascity-autofix).
-2. `gh variable set WORKER_ENV_SYNC_AUTOMERGE --repo gastownhall/beads --body true`
+2. `gh variable set WORKER_ENV_SYNC_AUTOMERGE --repo jonapich/beads --body true`
 
 If the variable is set before the App has those permissions, the guard
 cannot mint its merge token and labels the PR `status/needs-review-auto`
@@ -834,7 +834,7 @@ so the sync PR still opens and lands as above.
 
 Turning it on, once gascity publishes the record and rbe-west serves the
 previous pin (gastownhall/gascity#8271 merged, gascity/infra#2452 deployed):
-`gh variable set RBE_WORKER_ENV_GRACE --repo gastownhall/beads --body true`.
+`gh variable set RBE_WORKER_ENV_GRACE --repo jonapich/beads --body true`.
 Rollback: `gh variable delete RBE_WORKER_ENV_GRACE --repo
 gastownhall/beads`; the next run's preflight is strict again. Delete it too
 whenever rbe-west stops serving previous pins (its grace switch off or
@@ -1859,7 +1859,7 @@ real steps over a pull request, a merge group and a push to `main`.
 ### Queueing a PR
 
 ```bash
-gh pr merge <number> --auto --squash --repo gastownhall/beads
+gh pr merge <number> --auto --squash --repo jonapich/beads
 ```
 
 On a green PR this adds it to the queue; while the PR's own required

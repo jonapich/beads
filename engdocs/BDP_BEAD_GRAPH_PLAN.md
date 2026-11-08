@@ -61,13 +61,13 @@ binds the digest and the [evidence gate](https://github.com/gastownhall/bdp/blob
 recomputes it.
 This is provenance of the adopted upstream Read input, not Go observation evidence.
 All six verbatim files and 13 extracted examples have complete byte/blob/range
-records in [the dated PROVENANCE snapshot on the published P0 branch](https://github.com/gastownhall/beads/blob/a4b0ff638b4a5cebbe1b2d504897ae1449bd308f/internal/httpapi/bdpwire/schema/PROVENANCE).
+records in [the dated PROVENANCE snapshot on the published P0 branch](https://github.com/jonapich/beads/blob/a4b0ff638b4a5cebbe1b2d504897ae1449bd308f/internal/httpapi/bdpwire/schema/PROVENANCE).
 
 Local source adoption is recorded by `4ab80d75f3a11a9c53c5404251899eb1d4d29170`;
 `fdfb2738d58e107b714013a4c5a6eb4b19461c52` corrects Go/ECMAScript line-terminator
 parity without changing those vendored bytes. The tests on the dated Beads base and seven
 executed Dolt spikes are recorded in
-[the dated P0 verification snapshot on that published source](https://github.com/gastownhall/beads/blob/a4b0ff638b4a5cebbe1b2d504897ae1449bd308f/engdocs/BDP_P0_VERIFICATION_ROWS.md#current-main-read-contract-refresh--2026-09-10).
+[the dated P0 verification snapshot on that published source](https://github.com/jonapich/beads/blob/a4b0ff638b4a5cebbe1b2d504897ae1449bd308f/engdocs/BDP_P0_VERIFICATION_ROWS.md#current-main-read-contract-refresh--2026-09-10).
 The P0 tree's own verification copy supersedes that snapshot's Files/Rerun guidance.
 The initial refresh passed 95 top-level / 192 including subtests, zero skips.
 That adoption updated the vendored inputs and DTO parity together, replaced
@@ -167,7 +167,7 @@ Read contract or its historical verification results:
 | BDP #30 History | merge `1fe8cf32afabd02ca62d86548409f82dd756e357` | The selected History wire/spec materialization is merged. Server/client/adapter realization, provider mapping and capability advertisement remain separate work. |
 | BDP Read runtime through #40 | main `eac6017541895bb4cb1399e1a8056bb7375b185c` | [Dated BDP status and evidence boundaries](https://github.com/gastownhall/bdp/blob/eac6017541895bb4cb1399e1a8056bb7375b185c/STATUS.md) record subsequent shared Read work and its named-target qualifications. Those observations are not Beads evidence and do not re-pin this P0 to the later bundle or matrix. |
 | Jim #6147 / #6358 | `9c4e7a8f1959582f07db3b87641cb33863fda860` / `5fdfb92fe544c9a83feb098e83f2ccdd87b896c8` | Both remain open. #6304 and migration 0067 are merged; Phase 2 claims 0068. Their checks do not establish graph conformance. |
-| Advisory registry #6149 | `71b82aa02abd1284ce3b7b6bffc5952b6d66a4f8` | Still open, not a slot allocator. Its [current rows](https://github.com/gastownhall/beads/blob/71b82aa02abd1284ce3b7b6bffc5952b6d66a4f8/CLAIMED.md) propose Phase 3 at 0069–0070 and graph at 0071 if Donna agrees, while the graph row still says 0069+. This overlap is unresolved; P1 must recheck the actual slot after its ADR and owner coordination. No number is selected here. |
+| Advisory registry #6149 | `71b82aa02abd1284ce3b7b6bffc5952b6d66a4f8` | Still open, not a slot allocator. Its [current rows](https://github.com/jonapich/beads/blob/71b82aa02abd1284ce3b7b6bffc5952b6d66a4f8/CLAIMED.md) propose Phase 3 at 0069–0070 and graph at 0071 if Donna agrees, while the graph row still says 0069+. This overlap is unresolved; P1 must recheck the actual slot after its ADR and owner coordination. No number is selected here. |
 
 The adopted P0 Read input is the explicit #29 merge, with the complete §0
 adoption pins, source/fixture provenance and current Go boundary checks recorded
@@ -211,9 +211,9 @@ BDP shared Read work are recorded in the 2026-09-12 refresh above. The graph
 wire/serving phases must deliberately adopt the applicable reviewed contracts
 and prove them at the Beads boundary, including shared Read consequences.
 
-**Jim's current contribution and limits.** The [current writer](https://github.com/gastownhall/beads/blob/5fdfb92fe544c9a83feb098e83f2ccdd87b896c8/internal/storage/issueops/version_history.go#L24-L65)
+**Jim's current contribution and limits.** The [current writer](https://github.com/jonapich/beads/blob/5fdfb92fe544c9a83feb098e83f2ccdd87b896c8/internal/storage/issueops/version_history.go#L24-L65)
 records dependency changes and final outgoing dependency state. The [current
-inventory](https://github.com/gastownhall/beads/blob/5fdfb92fe544c9a83feb098e83f2ccdd87b896c8/VERSIONED-BEADS-WRITE-PATHS.md#L9-L49)
+inventory](https://github.com/jonapich/beads/blob/5fdfb92fe544c9a83feb098e83f2ccdd87b896c8/VERSIONED-BEADS-WRITE-PATHS.md#L9-L49)
 distinguishes 27 seam call sites, 46 must-mint entry points and 21 versioned
 paths out of 34 listed live paths; these counts are not interchangeable.
 Remaining limits include unchanged re-import minting, UOW's per-repository-write
@@ -241,7 +241,7 @@ digests remain distinct. Jim's empty actor plus `unknown` is not a valid
 present BDP attribution with an empty principal: preserve truthful absence
 or explicitly mapped nonempty attribution. Its current NULL agent/message
 columns and writer timestamp do not implement BDP's new context contract.
-Its [Phase 0 vocabulary](https://github.com/gastownhall/beads/blob/9c4e7a8f1959582f07db3b87641cb33863fda860/backend/conformance/expected_revision_contract.go#L26-L83)
+Its [Phase 0 vocabulary](https://github.com/jonapich/beads/blob/9c4e7a8f1959582f07db3b87641cb33863fda860/backend/conformance/expected_revision_contract.go#L26-L83)
 has nil hooks and treats Unretained/disclosure as a later axis; BDP separates
 incomplete reconstruction from authorization. Local Hold contracts are not
 BDP wire holds, and product test shapes are not BDP conformance observations.
