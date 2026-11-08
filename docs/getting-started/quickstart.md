@@ -370,4 +370,4 @@ bd admin cleanup --force
 - More sync scenarios: [`bd dolt`](/cli-reference/dolt)
 - Full command list: [CLI Reference](/cli-reference/index)
 
-See the [repository README](https://github.com/gastownhall/beads/blob/main/README.md) for an overview and links to deeper docs.
+See the [repository README](https://github.com/jonapich/beads/blob/main/README.md) for an overview and links to deeper docs.

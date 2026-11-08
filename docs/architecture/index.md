@@ -52,7 +52,7 @@ Recovery is straightforward: pull from a Dolt remote with `bd dolt pull`, or res
 
 The database stores five kinds of records: issues (the beads themselves), dependencies (typed edges such as `blocks`, `parent-child`, `related`, and `discovered-from`), labels, comments, and events (the audit trail). What each means — and how `bd ready` computes the claimable frontier from them — is covered in [How Beads Works](/core-concepts/index).
 
-Issue IDs are content-derived hashes (`bd-a1b2`) so that concurrent writers never collide and no central ID coordination is needed. See [Hash-based IDs](/core-concepts/hash-ids) for the design and [COLLISION_MATH](https://github.com/gastownhall/beads/blob/main/engdocs/COLLISION_MATH.md) for the birthday-paradox analysis of hash length vs collision probability.
+Issue IDs are content-derived hashes (`bd-a1b2`) so that concurrent writers never collide and no central ID coordination is needed. See [Hash-based IDs](/core-concepts/hash-ids) for the design and [COLLISION_MATH](https://github.com/jonapich/beads/blob/main/engdocs/COLLISION_MATH.md) for the birthday-paradox analysis of hash length vs collision probability.
 
 ### Issue Schema
 
@@ -84,7 +84,7 @@ Issues also carry workflow-layer field groups, among others: scheduling (`due_at
 
 Internal fields — `content_hash` (a SHA-256 of the issue's canonical content, used for change detection), `source_repo`, and `id_prefix` — never appear in exports.
 
-The schema is stable by default: prefer the `metadata` field for integration-, orchestrator-, or team-specific data before proposing new first-class fields. See the [Project Charter's schema boundary](https://github.com/gastownhall/beads/blob/main/engdocs/PROJECT_CHARTER.md#schema-boundary).
+The schema is stable by default: prefer the `metadata` field for integration-, orchestrator-, or team-specific data before proposing new first-class fields. See the [Project Charter's schema boundary](https://github.com/jonapich/beads/blob/main/engdocs/PROJECT_CHARTER.md#schema-boundary).
 
 ## Data Flow
 
@@ -273,5 +273,5 @@ For these use cases, consider GitHub Issues, Linear, or Jira.
 - [Recovery Runbooks](/recovery/index) — Step-by-step procedures for common issues
 - [CLI Reference](/cli-reference/index) — Complete command documentation
 - [Getting Started](/index) — Installation and first steps
-- [Project Charter](https://github.com/gastownhall/beads/blob/main/engdocs/PROJECT_CHARTER.md) — Product scope and boundaries (contributor doc)
-- [Internals](https://github.com/gastownhall/beads/blob/main/engdocs/INTERNALS.md) — Implementation details (contributor doc)
+- [Project Charter](https://github.com/jonapich/beads/blob/main/engdocs/PROJECT_CHARTER.md) — Product scope and boundaries (contributor doc)
+- [Internals](https://github.com/jonapich/beads/blob/main/engdocs/INTERNALS.md) — Implementation details (contributor doc)

@@ -48,14 +48,16 @@ Beads is a 1.x product used in production for AI-assisted development. The core 
 
 ### Does bd collect usage metrics?
 
-`bd` collects anonymous command-usage metrics. Each event is a `cli_command`
-record carrying only the command name; each batch also carries the bd version
-and OS platform, keyed by a machine-derived, HMAC-protected distinct ID. No
-email, repo path, remote URL, issue content, or user-supplied strings are
-collected. Events are written under `~/.beads/eventsData` and POSTed to
-`https://gastownhall-eventsapi.com/mp/collect`.
+Not by default: this build has no collector, so nothing leaves your machine
+unless you set `BEADS_METRICS_ENDPOINT` or `metrics.endpoint` in your user-global
+config to a collector of your own. With an endpoint set, each event is a
+`cli_command` record carrying only the command name; each batch also carries the
+bd version and OS platform, keyed by a machine-derived, HMAC-protected distinct
+ID. No email, repo path, remote URL, issue content, or user-supplied strings are
+collected. Events are written under `~/.beads/eventsData` and POSTed to that
+endpoint.
 
-Metrics are enabled by default (opt-out). The friendliest way to see or change
+Once an endpoint is set, metrics are enabled (opt-out). The friendliest way to see or change
 them is `bd metrics` (`bd metrics on` / `bd metrics off` / `bd metrics example`),
 which takes effect on the next command with no restart. `BD_DISABLE_METRICS=1`
 still works as a one-off, shell-scoped override. The cross-tool
@@ -93,7 +95,7 @@ bd create "Add Stripe"  # bd-f14c — no collision
 git merge feature-auth  # clean merge, distinct IDs
 ```
 
-IDs start at 3 characters and grow automatically (up to 8) as the database grows, keeping the collision probability under a fixed threshold. See [Hash IDs](/core-concepts/hash-ids) and [Adaptive IDs](/core-concepts/adaptive-ids), or the [collision math](https://github.com/gastownhall/beads/blob/main/engdocs/COLLISION_MATH.md) if you want the numbers.
+IDs start at 3 characters and grow automatically (up to 8) as the database grows, keeping the collision probability under a fixed threshold. See [Hash IDs](/core-concepts/hash-ids) and [Adaptive IDs](/core-concepts/adaptive-ids), or the [collision math](https://github.com/jonapich/beads/blob/main/engdocs/COLLISION_MATH.md) if you want the numbers.
 
 ### What are hierarchical child IDs?
 
@@ -249,7 +251,7 @@ Yes — `bd github sync --pull-only` imports issues in bulk (`bd github pull <re
 
 Beads has built-in bidirectional sync for all three — `bd github`, `bd jira`, and `bd linear` each provide `sync` for bulk moves, plus `pull`/`push` for specific issues by ID (GitLab, Azure DevOps, and Notion are covered by `bd gitlab`, `bd ado`, and `bd notion`). Configure credentials with `bd config set` per the [CLI reference](/cli-reference/index), then run the sync in the pull direction: `bd github sync --pull-only`, `bd jira sync --pull`, or `bd linear sync --pull`.
 
-For any other tracker: export from it (usually CSV or JSON), convert to beads' JSONL format, and run `bd import <file>`. See [examples](https://github.com/gastownhall/beads/tree/main/examples) for scripting patterns.
+For any other tracker: export from it (usually CSV or JSON), convert to beads' JSONL format, and run `bd import <file>`. See [examples](https://github.com/jonapich/beads/tree/main/examples) for scripting patterns.
 
 ### Can I export back out of beads?
 
@@ -296,7 +298,7 @@ Yes, three ways: `bd query` for the built-in query language (compound filters, b
 
 ### Does beads support Windows?
 
-Yes — native Windows support, no MSYS or MinGW required. A PowerShell script installs prebuilt releases, and everything works with Windows paths. See [Installation](/getting-started/installation#windows-11).
+Yes — native Windows support, no MSYS or MinGW required. A Docker build produces `bd.exe`, and everything works with Windows paths. See [Installation](/getting-started/installation).
 
 Because `bd.exe` is a native binary, two integration details catch people out: Node programs cannot spawn the npm `bd.cmd` shim without a shell, and `/tmp` paths that reach `bd` unconverted — from Node, scripts, or config values — resolve to the drive root, not Git Bash's `/tmp`. Both are covered under [Platform-Specific Issues](/reference/troubleshooting#platform-specific-issues).
 
@@ -358,15 +360,15 @@ For multi-writer scenarios, use server mode so concurrent access goes through th
 
 ### Where can I get more help?
 
-- **Documentation**: [Quickstart](/getting-started/quickstart), [Advanced Features](/reference/advanced), [README](https://github.com/gastownhall/beads/blob/main/README.md)
+- **Documentation**: [Quickstart](/getting-started/quickstart), [Advanced Features](/reference/advanced), [README](https://github.com/jonapich/beads/blob/main/README.md)
 - **Troubleshooting**: [Troubleshooting guide](/reference/troubleshooting) and the [recovery runbooks](/recovery/index)
-- **Examples**: [examples/](https://github.com/gastownhall/beads/tree/main/examples)
+- **Examples**: [examples/](https://github.com/jonapich/beads/tree/main/examples)
 - **GitHub Issues**: [Report bugs or request features](https://github.com/gastownhall/beads/issues)
-- **GitHub Discussions**: [Ask questions](https://github.com/gastownhall/beads/discussions)
+- **GitHub Discussions**: [Ask questions](https://github.com/jonapich/beads/discussions)
 
 ### How can I contribute?
 
-Contributions are welcome. See [CONTRIBUTING.md](https://github.com/gastownhall/beads/blob/main/CONTRIBUTING.md) for guidelines, test instructions, and the development workflow.
+Contributions are welcome. See [CONTRIBUTING.md](https://github.com/jonapich/beads/blob/main/CONTRIBUTING.md) for guidelines, test instructions, and the development workflow.
 
 ### Where's the roadmap?
 

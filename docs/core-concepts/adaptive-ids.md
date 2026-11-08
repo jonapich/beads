@@ -215,5 +215,5 @@ guidance and per-prefix counter isolation.
 
 ## Related
 
-- [Migration Guide](https://github.com/gastownhall/beads/blob/main/README.md#migration) - Converting from sequential to hash IDs
+- [Migration Guide](https://github.com/jonapich/beads/blob/main/README.md#migration) - Converting from sequential to hash IDs
 - [Configuration](/reference/configuration) - All configuration options

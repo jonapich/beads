@@ -28,7 +28,7 @@ bd info --whats-new
    `bd dolt push`
 2. Back up **with that same current binary**, before installing:
    `bd export --all -o .beads/backup/pre-migrate-$(date +%Y%m%d).jsonl`
-3. Upgrade using the command that matches your install method.
+3. Rebuild `bd` as described in [Upgrading](#upgrading).
 4. After upgrading:
    `bd upgrade review`
    `bd hooks install`
@@ -46,66 +46,14 @@ its own leaves an existing database untouched. The full procedure is below.
 
 ## Upgrading
 
-Use the command that matches your install method.
+This fork has one install method: rebuild from a checkout you have reviewed.
 
-| Install method | Platforms | Command |
-|---|---|---|
-| Quick install script | macOS, Linux, FreeBSD | `curl -fsSL https://raw.githubusercontent.com/gastownhall/beads/main/scripts/install.sh \| bash` |
-| PowerShell installer | Windows | `irm https://raw.githubusercontent.com/gastownhall/beads/main/install.ps1 \| iex` |
-| Homebrew | macOS, Linux | `brew upgrade beads` |
-| go install (server-mode only) | macOS, Linux, FreeBSD, Windows | `CGO_ENABLED=0 go install github.com/steveyegge/beads/cmd/bd@latest` |
-| go install (embedded-capable) | macOS, Linux, Windows | `CGO_ENABLED=1 GOFLAGS=-tags=gms_pure_go go install github.com/steveyegge/beads/cmd/bd@latest` |
-| npm | macOS, Linux, Windows | `npm update -g @beads/bd` |
-| bun | macOS, Linux, Windows | `bun install -g --trust @beads/bd` |
-| From source (Unix shell) | macOS, Linux, FreeBSD | `git pull && make build` |
-
-### Quick install script (macOS/Linux/FreeBSD)
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/gastownhall/beads/main/scripts/install.sh | bash
-```
-
-### PowerShell installer (Windows)
-
-```pwsh
-irm https://raw.githubusercontent.com/gastownhall/beads/main/install.ps1 | iex
-```
-
-### Homebrew
-
-```bash
-brew upgrade beads
-```
-
-{/* Canonical Homebrew tap-migration snippet. The installation page links
-    here; keep the two in sync. */}
-If you still have the old tap formula installed as `bd`, switch to the
-Homebrew core formula:
-
-```bash
-brew uninstall bd
-brew untap gastownhall/beads 2>/dev/null || true
-brew untap steveyegge/beads 2>/dev/null || true
-brew install beads
-```
-
-### go install
-
-```bash
-# Server-mode only
-CGO_ENABLED=0 go install github.com/steveyegge/beads/cmd/bd@latest
-
-# Embedded-capable
-CGO_ENABLED=1 GOFLAGS=-tags=gms_pure_go go install github.com/steveyegge/beads/cmd/bd@latest
-```
-
-### From Source
-
-```bash
-cd beads
+```powershell
 git pull
-make build
-sudo mv bd /usr/local/bin/
+$env:BD_COMMIT = git rev-parse HEAD
+$env:BD_BRANCH = git branch --show-current
+docker buildx bake
+Copy-Item dist\windows-amd64\bd.exe $HOME\.local\bin\
 ```
 
 ## After Upgrading

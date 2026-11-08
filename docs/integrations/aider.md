@@ -163,4 +163,4 @@ bd doctor
 - [IDE Setup](/getting-started/ide-setup)
 - [Quickstart](/getting-started/quickstart)
 - [Aider documentation](https://aider.chat/docs/)
-- [AGENTS.md](https://github.com/gastownhall/beads/blob/main/AGENTS.md) - the full bd agent workflow guide
+- [AGENTS.md](https://github.com/jonapich/beads/blob/main/AGENTS.md) - the full bd agent workflow guide

@@ -18,7 +18,7 @@ refusals point at `bd help init-safety`, which links this document as a
 whole — match those by exit code and symptom text.
 
 See also: `bd help init-safety`, and
-[ADR 0002 — `bd init` safety invariants](https://github.com/gastownhall/beads/blob/main/engdocs/adr/0002-init-safety-invariants.md).
+[ADR 0002 — `bd init` safety invariants](https://github.com/jonapich/beads/blob/main/engdocs/adr/0002-init-safety-invariants.md).
 
 ## Table of contents
 
@@ -147,7 +147,7 @@ bd init --reinit-local --discard-remote --destroy-token=DESTROY-bd
 ```
 
 Automation should template the token from project state, not from error
-output. See [ADR 0002 — Invariant 4](https://github.com/gastownhall/beads/blob/main/engdocs/adr/0002-init-safety-invariants.md)
+output. See [ADR 0002 — Invariant 4](https://github.com/jonapich/beads/blob/main/engdocs/adr/0002-init-safety-invariants.md)
 for why the token is never echoed in `bd`'s error messages.
 
 ---
@@ -384,7 +384,7 @@ because it authorizes the one thing this guard exists to prevent.
 The refusal names `--recreate-missing` but does not print this command: it also
 fires when the server merely could not be reached, so it sends you through
 steps 1 and 2 here instead of handing you a line to paste. See
-[ADR 0002 — Invariant 4](https://github.com/gastownhall/beads/blob/main/engdocs/adr/0002-init-safety-invariants.md).
+[ADR 0002 — Invariant 4](https://github.com/jonapich/beads/blob/main/engdocs/adr/0002-init-safety-invariants.md).
 
 **Limits worth knowing**
 

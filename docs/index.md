@@ -5,7 +5,7 @@ description: Dependency-aware, Dolt-backed issue tracker built for AI coding age
 
 **Beads** (`bd`) is a Dolt-powered issue tracker designed for AI-supervised coding workflows.
 
-These docs are for the 1.3.4 release of beads — see the [v1.3.4 release notes](https://github.com/gastownhall/beads/releases/tag/v1.3.4). Upgrading from 1.2.2 or earlier crosses a schema migration; read [Upgrading](/getting-started/upgrading) first. After upgrading, run `bd recompute-blocked` once per workspace whose store crossed migration 0059 under bd 1.3.0 or later, which includes any workspace first created by bd 1.2.x or earlier.
+These docs are for the 1.3.4 release of beads — see the [v1.3.4 release notes](https://github.com/jonapich/beads/releases/tag/v1.3.4). Upgrading from 1.2.2 or earlier crosses a schema migration; read [Upgrading](/getting-started/upgrading) first. After upgrading, run `bd recompute-blocked` once per workspace whose store crossed migration 0059 under bd 1.3.0 or later, which includes any workspace first created by bd 1.2.x or earlier.
 
 ## Why Beads?
 
@@ -20,11 +20,8 @@ Traditional issue trackers (Jira, GitHub Issues) weren't designed for AI agents.
 ## Quick Start
 
 ```bash
-# Install via Homebrew (macOS/Linux)
-brew install beads
-
-# Or quick install (macOS/Linux/FreeBSD)
-curl -fsSL https://raw.githubusercontent.com/gastownhall/beads/main/scripts/install.sh | bash
+# Build bd with Docker, then put it on your PATH (see Installation)
+docker buildx bake  # run in a clone of https://github.com/jonapich/beads
 
 # Initialize in your project
 cd your-project

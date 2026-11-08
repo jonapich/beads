@@ -868,6 +868,6 @@ bd doctor
 
 ## See Also
 
-- [README.md](https://github.com/gastownhall/beads/blob/main/README.md) - Main documentation
-- [AGENTS.md](https://github.com/gastownhall/beads/blob/main/AGENTS.md) - AI agent integration guide
+- [README.md](https://github.com/jonapich/beads/blob/main/README.md) - Main documentation
+- [AGENTS.md](https://github.com/jonapich/beads/blob/main/AGENTS.md) - AI agent integration guide
 - [Advanced Features](/reference/advanced) - Advanced features and configuration

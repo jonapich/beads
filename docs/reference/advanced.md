@@ -158,7 +158,7 @@ bd sql "SELECT id, title, status FROM issues LIMIT 5"
 ```
 
 Custom tables through direct storage access are a legacy SQLite-only pattern.
-See the [bd-example-extension-go example](https://github.com/gastownhall/beads/blob/main/examples/bd-example-extension-go/README.md)
+See the [bd-example-extension-go example](https://github.com/jonapich/beads/blob/main/examples/bd-example-extension-go/README.md)
 only if you are maintaining a SQLite-backed extension.
 
 ## Audit Data

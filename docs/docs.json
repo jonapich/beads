@@ -13,11 +13,7 @@
         "label": "GitHub",
         "icon": "github",
         "iconType": "brands",
-        "href": "https://github.com/gastownhall/beads"
-      },
-      {
-        "label": "npm",
-        "href": "https://www.npmjs.com/package/@beads/bd"
+        "href": "https://github.com/jonapich/beads"
       }
     ]
   },

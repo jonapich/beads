@@ -18,15 +18,7 @@ This page covers **Copilot Chat in VS Code via MCP**. For the terminal-based Cop
 
 ### Quick Setup
 
-1. Install beads-mcp:
-   ```bash
-   # Using uv (recommended)
-   uv tool install beads-mcp
-
-   # Or using pip / pipx
-   pip install beads-mcp
-   pipx install beads-mcp
-   ```
+1. Install `beads-mcp` from a source you have reviewed. This fork does not build or publish it.
 
 2. Create `.vscode/mcp.json` in your project:
    ```json
@@ -160,9 +152,6 @@ export PATH="$HOME/.local/bin:$PATH"
 
 # If installed with pip, find it
 pip show beads-mcp | grep Location
-
-# Reinstall if needed
-uv tool install beads-mcp --force
 ```
 
 ### No database found

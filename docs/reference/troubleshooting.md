@@ -19,7 +19,7 @@ go list -f {{.Target}} github.com/steveyegge/beads/cmd/bd
 export PATH="$PATH:$(go env GOPATH)/bin"
 
 # Or reinstall with the recommended installer
-curl -fsSL https://raw.githubusercontent.com/gastownhall/beads/main/scripts/install.sh | bash
+docker buildx bake  # run in a clone of https://github.com/jonapich/beads
 ```
 
 ### Wrong version of bd running
@@ -55,10 +55,7 @@ ahead of a newer package-manager install. Choose one installation method
 CGO/SQLite compatibility issue:
 
 ```bash
-CGO_ENABLED=1 GOFLAGS=-tags=gms_pure_go go install github.com/steveyegge/beads/cmd/bd@latest
-
-# Or if building from source
-git clone https://github.com/gastownhall/beads
+git clone https://github.com/jonapich/beads
 cd beads
 CGO_ENABLED=1 go build -tags gms_pure_go -o bd ./cmd/bd
 sudo mv bd /usr/local/bin/
@@ -84,7 +81,7 @@ export PATH="$HOME/.local/bin:$PATH"
 Kaspersky, Windows Defender, and others sometimes flag `bd` as a generic
 trojan. This is a **false positive** — Go binaries commonly trigger antivirus
 heuristics. Verify the binary's SHA256 checksum against the
-[GitHub release page](https://github.com/gastownhall/beads/releases) before
+[GitHub release page](https://github.com/jonapich/beads/releases) before
 adding an exclusion. See [Antivirus False Positives](/reference/antivirus) for
 per-vendor instructions.
 
@@ -1006,4 +1003,4 @@ uname -a
 ```
 
 Report at: https://github.com/gastownhall/beads/issues — or ask in
-[GitHub Discussions](https://github.com/gastownhall/beads/discussions).
+[GitHub Discussions](https://github.com/jonapich/beads/discussions).

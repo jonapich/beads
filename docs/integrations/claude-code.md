@@ -165,7 +165,7 @@ For slash commands and enhanced UX, install the [beads plugin](/integrations/cla
 
 ```bash
 # In Claude Code
-/plugin marketplace add gastownhall/beads
+/plugin marketplace add jonapich/beads
 /plugin install beads
 # Restart Claude Code
 ```

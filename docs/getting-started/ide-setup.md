@@ -233,12 +233,7 @@ bd setup copilot
 
 This installs a native Copilot CLI plugin manifest (`.copilot-plugin/plugin.json`, which registers `bd prime` hooks) and repository instructions (`.github/copilot-instructions.md`). See [Copilot CLI](/integrations/copilot-cli).
 
-**For VS Code with GitHub Copilot**, use the MCP server:
-
-```bash
-# Install MCP server
-uv tool install beads-mcp
-```
+**For VS Code with GitHub Copilot**, use the MCP server. This fork does not build or publish `beads-mcp`, so install it from a source you have reviewed.
 
 Create `.vscode/mcp.json` in your project:
 
@@ -309,12 +304,7 @@ bd prime --memories-only
 
 ## MCP Server (Alternative)
 
-For MCP-only environments (Claude Desktop, no shell access):
-
-```bash
-# Install MCP server
-pip install beads-mcp
-```
+For MCP-only environments (Claude Desktop, no shell access). This fork does not build or publish `beads-mcp`, so install it from a source you have reviewed.
 
 Add to Claude Desktop config:
 ```json

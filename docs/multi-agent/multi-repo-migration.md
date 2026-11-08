@@ -475,7 +475,7 @@ bd create "Issue" -p 1
 
 ## Next Steps
 
-- **CLI Reference:** See [README.md](https://github.com/gastownhall/beads/blob/main/README.md) for command details
+- **CLI Reference:** See [README.md](https://github.com/jonapich/beads/blob/main/README.md) for command details
 - **Configuration Guide:** See [Configuration](/reference/configuration) for all config options
 - **Troubleshooting:** See [Troubleshooting](/reference/troubleshooting)
 - **Multi-Repo Internals:** See [ROUTING.md#multi-repo-hydration](/multi-agent/routing#multi-repo-hydration)

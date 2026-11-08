@@ -266,8 +266,7 @@ bd dolt pull
 This was a bug in bd < 0.59.0. Upgrade bd:
 
 ```bash
-brew upgrade beads
-# or re-run the install script
+docker buildx bake  # run in a clone of https://github.com/jonapich/beads
 ```
 
 ### bd list shows nothing after clone

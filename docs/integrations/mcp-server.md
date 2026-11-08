@@ -16,17 +16,7 @@ Use MCP server when CLI is unavailable:
 
 ## Installation
 
-### Using uv (Recommended)
-
-```bash
-uv tool install beads-mcp
-```
-
-### Using pip
-
-```bash
-pip install beads-mcp
-```
+This fork does not build or publish `beads-mcp`. Install it from a source you have reviewed.
 
 ## Configuration
 
@@ -161,13 +151,7 @@ Check if `beads-mcp` is in PATH:
 which beads-mcp
 ```
 
-If not found:
-
-```bash
-# Reinstall
-pip uninstall beads-mcp
-pip install beads-mcp
-```
+If not found, reinstall it from the reviewed source you used.
 
 ### Tools not appearing
 

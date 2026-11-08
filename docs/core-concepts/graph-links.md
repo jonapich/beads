@@ -277,6 +277,6 @@ Build conversation chains (via orchestrator mail):
 
 ## See Also
 
-- [Messaging](https://github.com/gastownhall/beads/blob/main/engdocs/messaging.md) - Mail commands and threading
+- [Messaging](https://github.com/jonapich/beads/blob/main/engdocs/messaging.md) - Mail commands and threading
 - [Dependencies](/getting-started/quickstart#add-dependencies) - Blocking dependencies
 - [CLI Reference](/cli-reference/index) - All commands

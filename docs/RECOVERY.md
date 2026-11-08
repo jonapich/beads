@@ -2,7 +2,7 @@
 
 The recovery playbooks moved to [docs/recovery/](recovery/index.md), rendered
 on the docs site at
-[https://beads.gascity.com/recovery/](https://beads.gascity.com/recovery/).
+[https://github.com/jonapich/beads/blob/main/docs/recovery.md](https://github.com/jonapich/beads/blob/main/docs/recovery.md).
 
 > **Why this file exists:** released `bd` binaries print URLs into this file —
 > v1.1.0's Dolt merge-refusal guidance (`printAncestorPKMismatchGuidance`,

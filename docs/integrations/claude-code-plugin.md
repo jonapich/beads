@@ -19,7 +19,7 @@ Beads (`bd`) is an issue tracker designed specifically for AI-supervised coding 
 
 1. Install beads CLI:
 ```bash
-curl -sSL https://raw.githubusercontent.com/gastownhall/beads/main/scripts/install.sh | bash
+docker buildx bake  # run in a clone of https://github.com/jonapich/beads
 ```
 
 
@@ -31,7 +31,7 @@ There are two ways to install the beads plugin:
 
 ```bash
 # In Claude Code
-/plugin marketplace add gastownhall/beads
+/plugin marketplace add jonapich/beads
 /plugin install beads
 ```
 
@@ -39,7 +39,7 @@ There are two ways to install the beads plugin:
 
 ```bash
 # Clone the repository (shell command)
-git clone https://github.com/gastownhall/beads
+git clone https://github.com/jonapich/beads
 cd beads
 ```
 
@@ -286,14 +286,7 @@ Claude Code will pull the latest version from GitHub. After updating, **restart 
 The plugin requires the `bd` CLI to be installed. Update it separately:
 
 ```bash
-# Quick update
-curl -fsSL https://raw.githubusercontent.com/gastownhall/beads/main/scripts/install.sh | bash
-
-# Or with Go (server-mode only)
-CGO_ENABLED=0 go install github.com/steveyegge/beads/cmd/bd@latest
-
-# Or with Go (embedded-capable)
-CGO_ENABLED=1 GOFLAGS=-tags=gms_pure_go go install github.com/steveyegge/beads/cmd/bd@latest
+docker buildx bake  # run in a clone of https://github.com/jonapich/beads
 ```
 
 ### 3. Version Compatibility
@@ -356,7 +349,7 @@ CHANGELOG.md for release notes.
 
 ## Learn More
 
-- **GitHub**: https://github.com/gastownhall/beads
+- **GitHub**: https://github.com/jonapich/beads
 - **Documentation**: See README.md in the repository
 - **Examples**: Check `examples/` directory for integration patterns
 - **MCP Server**: See `integrations/beads-mcp/` for server details
