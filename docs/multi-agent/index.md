@@ -67,6 +67,9 @@ bd dep add bd-42 external:other-repo:api-ready
   repositories and `BEADS_DIR` resolution.
 - [Coordination](/multi-agent/coordination) — work assignment and handoff
   patterns between agents.
+- [Agent Working Memory](/multi-agent/agent-memory) — size-bounded reads,
+  stages, typed links, handoff comments and stale claims for agents that start
+  cold.
 - [Federation](/multi-agent/federation) — peer-to-peer sharing of beads
   across repos and organizations.
 - [Bucket Federation Quickstart](/multi-agent/bucket-federation) — federate

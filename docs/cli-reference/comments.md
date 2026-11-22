@@ -30,7 +30,9 @@ bd comments [command]
 **Flags:**
 
 ```
-      --local-time   Show timestamps in local time instead of UTC
+      --kind string   List only comments of this kind, as structured records
+      --last          With --kind: return only the most recent one
+      --local-time    Show timestamps in local time instead of UTC
 ```
 
 ## bd comments add
@@ -51,8 +53,10 @@ bd comments add [issue-id] [text...] [flags]
 **Flags:**
 
 ```
-  -a, --author string   Add author to comment
-  -f, --file string     Read comment text from file
+  -a, --author string      Add author to comment
+  -f, --file string        Read comment text from file
+      --json-file string   Read a JSON comment body from a file (- for stdin); requires --kind
+      --kind string        Store a kinded comment (e.g. handoff); read back with bd comments <id> --kind <kind>
 ```
 
 ## bd comments list

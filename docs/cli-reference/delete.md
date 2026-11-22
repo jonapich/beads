@@ -29,7 +29,8 @@ DEPENDENCY HANDLING (the same on a local database and against a team server):
 Default: Fails if any issue has dependents not in deletion set
   bd delete bd-1 bd-2
 
-Cascade: Recursively delete all dependents
+Cascade: Also delete parent-child descendants; other dependents survive
+(orphaned, as with --force). Preview first: --dry-run lists every id it deletes.
   bd delete bd-1 --cascade --force
 
 Force: Delete and orphan dependents
@@ -42,8 +43,9 @@ bd delete <issue-id> [issue-id...] [flags]
 **Flags:**
 
 ```
-      --cascade            Recursively delete all dependent issues
-      --dry-run            Preview what would be deleted without making changes
-  -f, --force              Actually delete (without this flag, shows preview)
-      --from-file string   Read issue IDs from file (one per line)
+      --cascade                      Also delete parent-child descendants; other dependents survive
+      --dry-run                      Preview what would be deleted without making changes
+  -f, --force                        Actually delete (without this flag, shows preview)
+      --from-file string             Read issue IDs from file (one per line)
+      --if-revision bd show --json   Apply the write only if the issue's current revision equals this value (the decimal int64 from bd show --json's "revision" field). One id only: refused before any write when combined with more than one issue id. A mismatch writes nothing and exits 13 (vs 1 for other failures).
 ```

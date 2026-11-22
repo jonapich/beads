@@ -10,7 +10,9 @@ Generated from `bd help --doc gc`.
 Full lifecycle garbage collection for standalone Beads databases.
 
 Runs three phases in sequence:
-  1. DECAY   — Delete closed issues older than N days (default 90)
+  1. DECAY   — Delete closed issues older than N days (default 90), except
+               those of a type the workspace's types.retained setting names
+               (only bd prune/purge --retain-ids deletes those)
   2. COMPACT — Squash old Dolt commits into fewer commits (bd compact)
   3. GC      — Run Dolt garbage collection to reclaim disk space
 

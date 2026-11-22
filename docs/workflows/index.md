@@ -34,6 +34,8 @@ The three phases, in the chemistry metaphor the CLI uses:
   `needs` dependencies, variables, and composition rules.
 - [Gates](/workflows/gates) — async wait conditions (human, timer, GitHub
   run/PR, cross-rig bead) that park a step until the world catches up.
+- [Sign-off](/workflows/signoff) — agents summarize the calls they made when
+  closing a bead; you approve or dispute each one afterwards.
 - [Wisps](/workflows/wisps) — ephemeral molecules for transient operational
   work that shouldn't clutter history.
 - [TODO Command](/workflows/todo) — `bd todo`, the lightweight interface for

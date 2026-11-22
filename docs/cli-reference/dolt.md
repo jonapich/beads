@@ -160,8 +160,9 @@ Requires a Dolt remote to be configured in the database directory.
 For Hosted Dolt, set DOLT_REMOTE_USER and DOLT_REMOTE_PASSWORD environment
 variables for authentication.
 
-Use --remote to pull from a specific named remote instead of the default.
-The remote must already exist (see 'bd dolt remote add').
+Name a remote to pull from it instead of the default: 'bd dolt pull &lt;remote&gt;'
+or 'bd dolt pull --remote &lt;remote&gt;'. The remote must already exist (see
+'bd dolt remote add').
 
 Use --strategy ours|theirs to resolve conflicts the auto-resolver declines
 (e.g. both sides edited the same issue since the last sync) instead of
@@ -170,7 +171,7 @@ server-mode/sql-server storage use 'bd conflicts resolve' after a pull that
 reports conflicts.
 
 ```
-bd dolt pull [flags]
+bd dolt pull [remote] [flags]
 ```
 
 **Flags:**
@@ -194,11 +195,15 @@ variables for authentication.
 Use --force to overwrite remote changes (e.g., when the remote has
 uncommitted changes in its working set).
 
-Use --remote to push to a specific named remote instead of the default.
-The remote must already exist (see 'bd dolt remote add').
+If the last push or fetch shows the remote already has your latest commit, bd
+says so without contacting the remote. --force always pushes.
+
+Name a remote to push to it instead of the default: 'bd dolt push &lt;remote&gt;'
+or 'bd dolt push --remote &lt;remote&gt;'. The remote must already exist (see
+'bd dolt remote add').
 
 ```
-bd dolt push [flags]
+bd dolt push [remote] [flags]
 ```
 
 **Flags:**
@@ -265,8 +270,19 @@ pre-squash store. This command rebuilds the remote's data plane so it holds
 only live chunks:
 
   - Git-backed remotes (issue data riding a git remote under refs/dolt/data):
-    deletes the Dolt data refs on the git remote, then force-pushes to
-    rebuild a fresh store. Code branches are untouched.
+    rebuilds a fresh store from local HEAD and replaces the remote's Dolt
+    data refs with it (through a Dolt sql-server it pushes the fresh store
+    to a temporary ref first, so the remote keeps its data until the new
+    store is complete, then restarts bd's own server, the shared server in
+    shared-server mode, so that it rereads the remote; like bd dolt stop,
+    the restart commits any uncommitted changes in every database that
+    server serves, and it briefly interrupts them. Any other server must be
+    restarted after the reset, before its next push or pull of the remote,
+    and so must bd's own while auto-start is off or, outside shared-server
+    mode, BEADS_DOLT_SERVER_MODE=1 or dolt_server_port declares it
+    externally managed: bd does not stop such a server, and exits non-zero
+    once the reset is done, so that nothing pushes or pulls through it
+    first). Code branches are untouched.
   - Native file remotes (file:// paths): clears the store directory, then
     force-pushes to rebuild it. Refused for a git repository, bare or a
     checkout, where Dolt keeps the store among the repository's own files:
@@ -352,8 +368,13 @@ bd dolt show [flags]
 
 Start a dolt sql-server for the current beads project.
 
-The server runs in the background on a per-project port derived from the
-project path. PID and logs are stored in .beads/.
+The server runs in the background; PID and logs are stored in .beads/. With
+no port configured, it listens on a free port the OS assigns and records it in
+.beads/dolt-server.port. 'bd dolt stop' removes that file, so the next start
+can get a different port (shared-server mode defaults to port 3308 instead).
+To keep one port across restarts, set dolt.port in .beads/config.yaml, or in
+.beads/config.local.yaml for a machine-local value; 'bd dolt show' lists the
+port sources in priority order.
 
 The server auto-starts transparently when needed, so manual start is rarely
 required. Use this command for explicit control or diagnostics.
@@ -363,8 +384,21 @@ lifecycle and starts it on demand, so a server started here would be a second,
 unsupervised one over the same data directory. Use 'bd dolt status' to see what
 is running and 'bd dolt stop' to shut it down.
 
+With dolt.auto-start: false the server is expected to be managed outside bd, so
+a start that would create a new, empty Dolt database (the data directory is
+missing, empty, or holds no database) is refused before anything is written:
+it would publish its port and shadow the managed server's database. Starting
+over existing data, or adopting a server bd already tracks, is unaffected. Use
+--force to create the new database anyway.
+
 ```
 bd dolt start [flags]
+```
+
+**Flags:**
+
+```
+      --force   Start even when dolt.auto-start is off and this would create a new, empty Dolt database
 ```
 
 ## bd dolt status
@@ -375,9 +409,16 @@ In embedded mode, reports that the Dolt engine runs in-process and shows
 the on-disk data directory. For beads-managed (local) servers, displays
 PID, port, and data directory from the local PID file. For externally-
 managed servers — a shared server (dolt.shared-server: true), a remote
-dolt_server_host, or a local server managed outside bd (dolt.auto-start:
-false, e.g. an orchestrator-shared sql-server) — pings the configured
-endpoint via SQL and reports reachability, server version, and database.
+dolt_server_host, a server at the IPv6 loopback (::1, where bd's own
+server never listens), or a local server managed outside bd
+(dolt.auto-start: false, e.g. an orchestrator-shared sql-server) — pings
+the configured endpoint via SQL and reports reachability, server version,
+and database. While no server of bd's own is running, it does the same for
+a local server bd does not start: one on a unix socket or behind a
+credential command, or one that BEADS_DOLT_SERVER_PORT, BEADS_DOLT_PORT,
+dolt_server_port or BEADS_DOLT_SERVER_MODE=1 declares externally managed.
+The probe logs in as the configured user; it does not present a credential
+command's token.
 
 In proxied-server mode, reports the proxy (the endpoint every bd command
 connects through) and the dolt backend behind it separately, read from the

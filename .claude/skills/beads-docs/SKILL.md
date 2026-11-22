@@ -190,13 +190,14 @@ style, nav), edit `tools/docsmint` and its tests. The drift gates
 (`generate-cli-docs.sh --check`, `scripts/check-cli-docs-drift.sh` in PR CI,
 and the docs-autofix bot) fail or auto-fix any hand edit.
 
-**The docs describe the pinned release, not main.** `docs/cli-docs.pin`
-names the release tag the whole docs corpus targets; the pipeline builds bd
-from that tag and validates against it, so a Go-source edit on main shows up
-in the committed docs only after the pin is bumped (at release time,
-followed by a regeneration). Hand-written pages follow the same policy:
-document what the pinned release does, never main-only features. See
-`engdocs/decisions/2026-07-17-docs-release-pin.md`.
+**This fork's docs describe its default branch.** `docs/cli-docs.pin` is
+`HEAD`, so the pipeline builds bd from the checkout. Every change that
+touches the command surface or user-visible behavior updates the
+hand-written pages and regenerates the CLI reference in the same commit, and
+lists fork-only features on `docs/reference/fork-status.md`. (Upstream pins
+the docs to its last release; see
+`engdocs/decisions/2026-07-17-docs-release-pin.md` for that policy, which
+this fork does not follow.)
 
 ## 9. Verify before you call it done
 

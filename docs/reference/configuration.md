@@ -5,7 +5,7 @@ description: Complete reference for bd configuration across config.yaml and data
 
 Complete configuration reference for beads.
 
-Last reviewed: 2026-10-26
+Last reviewed: 2026-11-22
 
 Freshness source: `cmd/bd/main.go`, `cmd/bd/config.go`, `internal/config/`, `internal/configfile/`, and `internal/endpointtrust/`.
 
@@ -129,6 +129,12 @@ Any key whose name contains `api_key`, `api-key`, `secret`, `token`, or `passwor
 | `validation.on-sync` | — | `BD_VALIDATION_ON_SYNC` | `none` | Template validation before sync |
 | `validation.metadata.mode` | — | — | `none` | Metadata schema validation |
 | `hierarchy.max-depth` | — | — | `3` | Max hierarchical ID nesting depth |
+| `stage.values` | — | — | (any) | Comma list of stage names `bd update --stage` accepts; unset accepts any `[a-z][a-z0-9_]*` name (see [Agent working memory](/multi-agent/agent-memory#stages)) |
+| `link.kinds` | — | — | `mock,artifact,capture,commit,doc` | Comma list of link kinds `bd link add` accepts |
+| `awaiting_user.labels` | — | — | `needs-decision,needs-design` | Labels that put an open issue in `bd list --awaiting-user` |
+| `ready.exclude_labels` | — | — | (none) | Labels `bd ready` always excludes, on top of `--exclude-label` |
+| `signoff.types` | — | — | (none) | Issue types whose `bd close` requires a sign-off summary (see [Sign-off](/workflows/signoff)) |
+| `signoff.labels` | — | — | (none) | Labels whose `bd close` requires a sign-off summary |
 | `backup.enabled` | — | `BD_BACKUP_ENABLED` | `false` | Enable periodic Dolt-native backup to `.beads/backup/` (see [below](#auto-backup)) |
 | `backup.interval` | — | `BD_BACKUP_INTERVAL` | `15m` | Minimum time between auto-backups |
 | `backup.git-push` | — | — | `false` | Auto-push backup repo |

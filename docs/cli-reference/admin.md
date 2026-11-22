@@ -41,7 +41,12 @@ EXAMPLES:
 
 SAFETY:
 - Requires --force flag to actually delete (unless --dry-run)
-- Supports --cascade to delete dependents
+- Skips pinned issues, and issues of a type the workspace's types.retained
+  setting names (their ids are idempotency keys; only bd prune/purge
+  --retain-ids deletes them); --json reports the latter as retention_required
+- Supports --cascade, which also deletes
+  parent-child descendants; other dependents survive (refused while
+  types.retained names a type, since a cascade could reach a retained issue)
 - Shows preview of what will be deleted
 - Use --json for programmatic output
 
@@ -56,7 +61,7 @@ bd admin cleanup [flags]
 **Flags:**
 
 ```
-      --cascade          Recursively delete all dependent issues
+      --cascade          Also delete parent-child descendants; other dependents survive
       --dry-run          Preview what would be deleted without making changes
       --ephemeral        Only delete closed wisps (transient molecules)
   -f, --force            Actually delete (without this flag, shows error)
@@ -84,7 +89,7 @@ Dolt Garbage Collection:
   With auto-commit per mutation, Dolt commit history grows over time. Use
   --dolt to run Dolt garbage collection and reclaim disk space.
 
-  --dolt: Run Dolt GC on .beads/dolt directory to free disk space.
+  --dolt: Run Dolt GC on the active database to free disk space.
           This removes unreachable commits and compacts storage.
 
 Examples:
@@ -120,11 +125,10 @@ bd admin compact [flags]
       --apply            Apply mode: accept agent-provided summary
       --auto             Auto mode: AI-powered compaction
       --batch-size int   Issues per batch (default 10)
-      --dolt             Dolt mode: run Dolt garbage collection on .beads/dolt
+      --dolt             Dolt mode: run Dolt garbage collection on the active database
       --dry-run          Preview without compacting
       --force            Force compact (bypass checks, requires --id)
       --id string        Compact specific issue
-      --json             Output JSON format
       --limit int        Limit number of candidates (0 = no limit)
       --stats            Show compaction statistics
       --summary string   Path to summary file (use '-' for stdin)

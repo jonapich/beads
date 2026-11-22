@@ -2,11 +2,11 @@
 # validated against: docs/CLI_REFERENCE.md, docs/cli-reference/, and the
 # CLI Reference pages array in docs/docs.json.
 #
-# The published docs site describes the latest *release*, not main's source,
-# so the docs pipeline builds bd from this tag (CGO_ENABLED=0, pure Go —
-# CI's canonical build) instead of the current checkout. Bump this tag as
-# part of each release, then run ./scripts/generate-cli-docs.sh.
+# This fork's docs describe its default branch, not the last upstream
+# release, so the pin is HEAD: the docs pipeline builds bd from the current
+# checkout. Regenerate with ./scripts/generate-cli-docs.sh in the same change
+# as any command-surface edit. docs/reference/fork-status.md lists what the
+# default branch adds over the last upstream release.
 #
-# Set to HEAD to track the current checkout's source instead (the pre-pin
-# behavior).
-v1.3.4
+# A release tag here (e.g. v1.3.4) builds bd from that tag instead.
+HEAD

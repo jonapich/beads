@@ -29,6 +29,16 @@ retired label across the rig).
 To delete closed ephemeral beads (wisps, transient molecules) use
 `bd purge` instead.
 
+--retain-ids retires every id the sweep deletes: a permanent tombstone (the id
+and its closed_at) is written in the same transaction, and from then on a
+create naming that id is refused (code idempotency_expired) and an import
+skips it. Use it when ids are idempotency keys that must never run twice.
+Tombstones are permanent.
+
+Without --retain-ids, closed beads whose type the workspace's types.retained
+setting names are skipped and reported (retention_required under --json):
+their ids are idempotency keys, so only a retaining sweep may delete them.
+
 For full Dolt storage reclaim after deleting many rows, follow with `bd flatten`
 so history can be collapsed and old chunks can be garbage-collected.
 
@@ -51,4 +61,5 @@ bd prune [flags]
       --ignore-references   Delete closed beads even when referenced by open beads (use with care; see --help for details)
       --older-than string   Only prune beads closed more than N ago (e.g., 30d, 2w, 60, 36h)
       --pattern string      Only prune beads matching ID glob pattern (e.g., 'gm-old-*')
+      --retain-ids          Retire every pruned id with a permanent tombstone so it can never be created again (see --help)
 ```

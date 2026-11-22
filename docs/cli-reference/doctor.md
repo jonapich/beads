@@ -55,7 +55,8 @@ Deep Validation Mode (--deep):
   Additional checks:
   - Parent consistency: All parent-child deps point to existing issues
   - Dependency integrity: All deps reference valid issues
-  - Epic completeness: Find epics ready to close (all children closed)
+  - Epic completeness: Find epics ready to close (all children closed as
+    completed work; duplicate/wontfix/superseded closes do not count)
   - Agent bead integrity: Agent beads have valid state values
   - Mail thread integrity: Thread IDs reference existing issues
   - Molecule integrity: Molecules have valid parent-child structures
@@ -63,7 +64,7 @@ Deep Validation Mode (--deep):
 Server Mode (--server):
   Run health checks for Dolt server mode connections (bd-dolt.2.3):
   - Server reachable: Can connect to configured host:port?
-  - Dolt version: Is it a Dolt server (not vanilla MySQL)?
+  - Dolt version: Is it a Dolt server (not vanilla MySQL) at 2.6.0 or newer?
   - Database exists: Does the 'beads' database exist?
   - Schema compatible: Can query beads tables?
   - Connection pool: Pool health metrics
@@ -106,8 +107,6 @@ Examples:
   bd doctor --fix --yes  # Automatically fix issues (no confirmation)
   bd doctor --fix -i     # Confirm each fix individually
   bd doctor --fix --fix-child-parent  # Also fix child→parent deps (opt-in)
-  bd doctor --fix --force # Force repair even when database can't be opened
-  bd doctor --fix --source=jsonl # Rebuild database from a JSONL export
   bd doctor --dry-run    # Preview what --fix would do without making changes
   bd doctor --perf       # Performance diagnostics
   bd doctor --output diagnostics.json  # Export diagnostics to file

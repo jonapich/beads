@@ -19,6 +19,10 @@ separate to protect against supply chain attacks. All work stays in the fork.
 - Nothing may fetch from, or send data to, the original project's
   infrastructure. `docker buildx bake guard` enforces this. Paths the fork does
   not carry are listed in `scripts/fork/removed-paths.txt`.
+- The user docs (`docs/`) and the generated CLI reference describe this fork's
+  default branch (`docs/cli-docs.pin` is `HEAD`). Update them, regenerate the
+  CLI reference, and list fork-only features on `docs/reference/fork-status.md`
+  in the same change as the behavior.
 - `engdocs/` still describes the original project's Bazel and CI setup, and the
   contributor and maintainer policy below was written for the original project.
   Treat both as background.

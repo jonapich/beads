@@ -257,6 +257,7 @@
           "workflows/molecules",
           "workflows/formulas",
           "workflows/gates",
+          "workflows/signoff",
           "workflows/wisps",
           "workflows/todo"
         ]
@@ -282,6 +283,7 @@
           "multi-agent/index",
           "multi-agent/routing",
           "multi-agent/coordination",
+          "multi-agent/agent-memory",
           "multi-agent/federation",
           "multi-agent/bucket-federation",
           "multi-agent/multi-repo-migration"
@@ -322,6 +324,7 @@
         "group": "Reference",
         "pages": [
           "reference/index",
+          "reference/fork-status",
           "reference/configuration",
           "reference/git-integration",
           "reference/worktrees",
@@ -354,6 +357,7 @@
               "cli-reference/completion",
               "cli-reference/config",
               "cli-reference/conflicts",
+              "cli-reference/connect",
               "cli-reference/context",
               "cli-reference/cook",
               "cli-reference/count",
@@ -436,6 +440,7 @@
               "cli-reference/setup",
               "cli-reference/ship",
               "cli-reference/show",
+              "cli-reference/signoff",
               "cli-reference/sql",
               "cli-reference/stale",
               "cli-reference/state",
@@ -453,6 +458,7 @@
               "cli-reference/upgrade",
               "cli-reference/vc",
               "cli-reference/version",
+              "cli-reference/versions",
               "cli-reference/where",
               "cli-reference/worktree"
             ]

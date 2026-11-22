@@ -8,6 +8,8 @@ rather than teach concepts (that's [How Beads Works](/core-concepts/index)).
 
 ## Pages in this section
 
+- [Fork Status](/reference/fork-status) — what this custom build's default
+  branch adds over the last upstream release.
 - [Configuration](/reference/configuration) — every config key, environment
   variable, default, and the precedence between them.
 - [Git Integration](/reference/git-integration) — hooks, `refs/dolt/data`,

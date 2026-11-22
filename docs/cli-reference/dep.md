@@ -28,7 +28,7 @@ bd dep [command]
 
 ```
   -b, --blocks string    Issue ID that this issue blocks (shorthand for: bd dep add <blocked> <blocker>)
-      --no-cycle-check   Skip per-edge cycle checks for speed (bulk wiring); bulk --file adds still run one final whole-graph check before commit
+      --no-cycle-check   Skip the post-add cycle warning (the per-edge cycle check still runs)
 ```
 
 ## bd dep add
@@ -65,7 +65,7 @@ Examples:
   bd dep add bd-42 --blocked-by bd-41                 # Flag syntax (same effect)
   bd dep add bd-42 --depends-on bd-41                 # Alias (same effect)
   bd dep add gt-xyz external:beads:mol-run-assignee   # Cross-project dependency
-  bd dep add bd-42 bd-41 --no-cycle-check             # Skip cycle check (bulk wiring)
+  bd dep add bd-42 bd-41 --no-cycle-check             # Skip the post-add cycle warning
   bd dep add --file deps.jsonl                        # Bulk JSONL: &#123;"from":"bd-42","to":"bd-41"&#125;
 
 ```
@@ -78,7 +78,7 @@ bd dep add [issue-id] [depends-on-id] [flags]
       --blocked-by string   Issue ID that blocks the first issue (alternative to positional arg)
       --depends-on string   Issue ID that the first issue depends on (alias for --blocked-by)
       --file string         Read dependency edges from JSONL file, or '-' for stdin
-      --no-cycle-check      Skip per-edge cycle checks for speed (bulk wiring); bulk --file adds still run one final whole-graph check before commit
+      --no-cycle-check      On bulk --file adds, skip per-edge cycle checks and the post-add cycle warning (one final whole-graph check still runs before commit); on a single-edge add, skip only the post-add cycle warning
   -t, --type string         Dependency type (blocks|tracks|related|parent-child|discovered-from|until|caused-by|validates|relates-to|supersedes); 'blocked-by' and 'depends-on' are accepted as aliases for 'blocks' (default "blocks")
 ```
 
@@ -88,6 +88,13 @@ Detect dependency cycles
 
 ```
 bd dep cycles [flags]
+```
+
+**Flags:**
+
+```
+      --include-tracks   Also walk 'tracks' edges: reports every cycle the default walk finds plus cycles that close through a tracks edge, never a loop made only of tracks edges (diagnostic for molecule-root deadlocks hidden by tracks-only propagation)
+      --limit int        Maximum cycles to print (0 = no limit); the reported total is always the whole count, and --json is never truncated (default 50)
 ```
 
 ## bd dep list
@@ -160,9 +167,10 @@ Examples:
   bd dep tree gt-0iqq --status=open      # Only show open issues
   bd dep tree gt-0iqq --depth=3          # Limit to 3 levels deep
 
-A node reached by two paths is shown ONCE, under the first path that got
-there, and a cycle simply ends the descent. --show-all-paths is a deprecated
-no-op; use 'bd dep cycles' to find circular dependencies.
+A node reached by two paths is expanded once, under the first path that got
+there; later paths list it as "(shown above)" (in --json, a row with
+"deduped": true). A cycle simply ends the descent. --show-all-paths is a
+deprecated no-op; use 'bd dep cycles' to find circular dependencies.
 
 --max-rows / BEADS_MAX_ROWS caveat: the tree walk has no query filter to
 thread the cap through, so the full tree is always built first and the
@@ -181,7 +189,7 @@ bd dep tree [issue-id] [flags]
   -d, --max-depth int      Maximum tree depth to display (safety limit) (default 50)
       --max-rows int       Hard upper bound on rows returned. Returns a non-zero exit (code 2) and an error to stderr if exceeded. 0 disables (the default). Overrides BEADS_MAX_ROWS for this invocation. Useful in CI/agent rigs that want a circuit breaker against pathological queries. Honored on both the direct and the --proxied-server route.
       --reverse            Show dependent tree (deprecated: use --direction=up)
-      --show-all-paths     Deprecated no-op: accepted and ignored. A node reached by two paths is shown once, under the first.
+      --show-all-paths     Deprecated no-op: accepted and ignored. A node reached by two paths is expanded once, under the first; later paths list it as (shown above).
       --status string      Filter to only show issues with this status (open, in_progress, blocked, deferred, closed)
 ```
 

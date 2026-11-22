@@ -18,6 +18,7 @@ bd list [flags]
 ```
       --all                          Show all issues including closed (overrides default filter)
   -a, --assignee string              Filter by assignee
+      --awaiting-user                Open issues labelled with any of config awaiting_user.labels (default needs-decision, needs-design); issues with a mock or artifact link sort first
       --brief                        Omit the free-form text (description, design, acceptance criteria, notes, payload, waiters) from each row. Filters that read those fields, such as --desc-contains, still select on them. An omitted field is indistinguishable from an empty one in --json; fetch a whole issue with bd show.
       --closed-after string          Filter issues closed after date (YYYY-MM-DD or RFC3339)
       --closed-before string         Filter issues closed before date (YYYY-MM-DD or RFC3339)
@@ -36,9 +37,11 @@ bd list [flags]
       --external-contains string     Filter by external ref substring (case-insensitive)
       --external-ref string          Filter by exact external_ref value
       --flat                         Disable tree format and use legacy flat list output
-      --format string                Output format: 'digraph' (for golang.org/x/tools/cmd/digraph), 'dot' (Graphviz), or Go template
+      --format string                Export the dependency graph of the listed issues: 'digraph' (edge list for golang.org/x/tools/cmd/digraph), 'dot' (Graphviz), or a Go template rendered once per edge over .IssueID, .DependsOnID, .Type, .Issue, .Dependency. 'json' is the exception and does not export the graph: it is equivalent to --json, which also wins when both flags are given. 'digraph' and templates print nothing when no listed issue depends on another; 'dot' still prints the nodes
+      --has-link string              Filter to issues with at least one typed link of this kind (see bd link add)
       --has-metadata-key string      Filter issues that have this metadata key set
-      --id string                    Filter by specific issue IDs (comma-separated, e.g., bd-1,bd-5,bd-10)
+      --id string                    Filter by specific issue IDs (comma-separated or repeated, e.g., bd-1,bd-5,bd-10)
+      --include-comments             Populate each row's comments field with full comment bodies in JSON output (--json only; costs one query per row that has comments). Without it, a row with comments carries comments_omitted=true, so an absent comments field is never mistaken for having none. Text output is unaffected either way.
       --include-ephemeral            Include ephemeral wisp-plane rows in output (normally hidden)
       --include-gates                Include gate issues in output (normally hidden)
       --include-infra                Include infrastructure beads (agent/role/message) in output
@@ -47,7 +50,7 @@ bd list [flags]
       --label-any strings            Filter by labels (OR: must have AT LEAST ONE). Can combine with --label
       --label-pattern string         Filter by label glob pattern (e.g., 'tech-*' matches tech-debt, tech-legacy)
       --label-regex string           Filter by label regex pattern (e.g., 'tech-(debt|legacy)')
-  -n, --limit int                    Limit results (default 50, use 0 for unlimited) (default 50)
+  -n, --limit int                    Limit results (an explicit --limit always wins, 0 meaning unlimited; otherwise --all is unlimited; otherwise a configured list.limit applies; otherwise unlimited when piped, else 20 in agent mode at a terminal, else 50) (default 50)
       --long                         Show detailed multi-line output for each issue
       --max-rows int                 Hard upper bound on rows returned. Returns a non-zero exit (code 2) and an error to stderr if exceeded. 0 disables (the default). Overrides BEADS_MAX_ROWS for this invocation. Useful in CI/agent rigs that want a circuit breaker against pathological queries. Honored on both the direct and the --proxied-server route.
       --metadata-field stringArray   Filter by metadata field (key=value, repeatable)
@@ -67,11 +70,14 @@ bd list [flags]
       --priority-max string          Filter by maximum priority (inclusive, 0-4 or P0-P4)
       --priority-min string          Filter by minimum priority (inclusive, 0-4 or P0-P4)
       --ready                        Show only ready issues (no active blockers, same semantics as bd ready)
-  -r, --reverse                      Reverse sort order
+  -r, --reverse                      Invert the sort field's default direction (created/updated/closed default to newest-first, so --sort updated --reverse is oldest-first)
+      --signoff string               Filter closed issues by sign-off state: pending, approved, disputed, waived (see bd signoff)
       --skip-labels                  Skip label hydration. The labels field in output will be empty regardless of actual labels. Use only when the caller does not depend on label data. Cannot combine with --label, --label-any, --label-pattern, --label-regex, --exclude-label, or --no-labels.
       --sort string                  Sort by field: priority, created, updated, closed, status, id, title, type, assignee
       --spec string                  Filter by spec_id prefix
-  -s, --status string                Filter by stored status (open, in_progress, blocked, deferred, closed). Comma-separated for multiple: --status open,in_progress. Note: repeating -s/--status silently overwrites the previous value — always use the comma-separated form for multi-status filters.
+      --stage string                 Filter by workflow stage (metadata stage; see bd update --stage)
+      --stale-claims string          In-progress issues whose claim looks abandoned: lease expired more than this long ago, or no lease and no heartbeat/update for this long (e.g. 30m, 2h)
+  -s, --status string                Filter by stored status (open, in_progress, blocked, deferred, closed). Comma-separated or repeated for multiple: --status open,in_progress
       --title string                 Filter by title text (case-insensitive substring match)
       --title-contains string        Filter by title substring (case-insensitive)
       --tree                         Hierarchical tree format (default: true; use --flat to disable) (default true)

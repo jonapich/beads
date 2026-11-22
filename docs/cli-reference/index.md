@@ -7,7 +7,7 @@ description: Generated reference for every bd command
 
 Generated from `bd help --docs-root`.
 
-This reference covers all 118 live top-level `bd` commands. Regenerate it with:
+This reference covers all 121 live top-level `bd` commands. Regenerate it with:
 
 ```bash
 ./scripts/generate-cli-docs.sh
@@ -54,6 +54,7 @@ These flags apply to all commands:
 - [`bd completion`](/cli-reference/completion)
 - [`bd config`](/cli-reference/config)
 - [`bd conflicts`](/cli-reference/conflicts)
+- [`bd connect`](/cli-reference/connect)
 - [`bd context`](/cli-reference/context)
 - [`bd cook`](/cli-reference/cook)
 - [`bd count`](/cli-reference/count)
@@ -136,6 +137,7 @@ These flags apply to all commands:
 - [`bd setup`](/cli-reference/setup)
 - [`bd ship`](/cli-reference/ship)
 - [`bd show`](/cli-reference/show)
+- [`bd signoff`](/cli-reference/signoff)
 - [`bd sql`](/cli-reference/sql)
 - [`bd stale`](/cli-reference/stale)
 - [`bd state`](/cli-reference/state)
@@ -153,5 +155,6 @@ These flags apply to all commands:
 - [`bd upgrade`](/cli-reference/upgrade)
 - [`bd vc`](/cli-reference/vc)
 - [`bd version`](/cli-reference/version)
+- [`bd versions`](/cli-reference/versions)
 - [`bd where`](/cli-reference/where)
 - [`bd worktree`](/cli-reference/worktree)
