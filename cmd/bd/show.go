@@ -225,6 +225,10 @@ var showCmd = &cobra.Command{
 
 			// Metadata: Owner · Type | Created · Updated
 			fmt.Println(formatIssueMetadataWithGates(issue, gates))
+			if issue.Status == types.StatusClosed {
+				cs, _ := issueStore.GetIssueComments(ctx, issue.ID) // Best effort, like the comments section
+				fmt.Print(formatSignoffBlock(issue, cs))
+			}
 
 			// Content sections — always show DESCRIPTION header so the user
 			// can distinguish "empty" from "hidden" (GH#3336).

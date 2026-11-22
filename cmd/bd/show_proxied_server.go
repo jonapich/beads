@@ -559,6 +559,10 @@ func proxiedRenderIssue(ctx context.Context, uw uow.UnitOfWork, issue *types.Iss
 		fmt.Printf("%s\n", formatIssueHeaderWithGates(issue, gates))
 	}
 	fmt.Println(formatIssueMetadataWithGates(issue, gates))
+	if issue.Status == types.StatusClosed {
+		cs, _ := proxiedGetComments(ctx, uw, issue.ID, isWisp) // Best effort, like the comments section
+		fmt.Print(formatSignoffBlock(issue, cs))
+	}
 
 	if issue.Description != "" {
 		fmt.Printf("\n%s\n%s\n", ui.RenderBold("DESCRIPTION"), uimd.RenderMarkdown(issue.Description))

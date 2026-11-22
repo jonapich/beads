@@ -31,6 +31,7 @@ Working With Issues:
   search            Search issues by text query
   set-state         Set operational state (creates event + updates label)
   show              Show issue details
+  signoff           Review, approve or dispute a closed issue's sign-off summary
   state             Query the current value of a state dimension
   tag               Add a label to an issue
   todo              Manage TODO items (convenience wrapper for task issues)

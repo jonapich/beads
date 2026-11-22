@@ -127,6 +127,9 @@ var YamlOnlyKeys = map[string]bool{
 	"link.kinds":           true,
 	"awaiting_user.labels": true,
 	"ready.exclude_labels": true,
+	// Issue types and labels whose close requires a sign-off summary.
+	"signoff.types":  true,
+	"signoff.labels": true,
 
 	// Backup settings (must be in yaml so GetValueSource can detect overrides)
 	"backup.enabled":            true,

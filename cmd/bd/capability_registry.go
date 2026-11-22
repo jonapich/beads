@@ -498,7 +498,7 @@ var proxyPermittedPaths = []string{
 	"assign", "batch", "blocked", "children", "close", "comment", "count", "create",
 	"defer", "delete", "duplicates", "edit", "export", "find-duplicates", "forget",
 	"gc", "graph", "graph check", "heartbeat", "import", "info", "lint", "link",
-	"link add", "link list", "link rm",
+	"link add", "link list", "link rm", "signoff",
 	"list", "note", "orphans", "priority", "promote", "prune", "purge", "q", "query",
 	"ready", "recompute-blocked", "reclaim", "reopen", "search", "set-state", "show",
 	"stale", "status", "statuses", "tag", "types", "unclaim", "undefer", "update",

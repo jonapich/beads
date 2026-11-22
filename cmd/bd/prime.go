@@ -1083,6 +1083,9 @@ bd update <id> --claim  # Claim it
 ` + completingWorkflow + `
 `
 	_, _ = fmt.Fprint(w, context)
+	if n := primePendingSignoffCount(); n > 0 {
+		_, _ = fmt.Fprintf(w, "\n**Sign-off:** %d closed issue(s) await the user's sign-off. Remind the user; they review with `bd list --signoff pending` and `bd signoff <id>`.\n", n)
+	}
 
 	return nil
 }

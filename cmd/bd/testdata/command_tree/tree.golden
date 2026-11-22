@@ -634,10 +634,13 @@ bd close
   flag --if-revision type=string default="" usage="Apply the write only if the issue's current revision equals this value (the decimal int64 from `bd show --json`'s \"revision\" field). One id only: refused before any write when combined with more than one issue id. A mismatch writes nothing and exits 13 (vs 1 for other failures)."
   flag --message -m type=string default="" hidden usage="Alias for --reason (git commit convention)"
   flag --no-auto type=bool default="false" usage="With --continue, show next step but don't claim it"
+  flag --no-signoff type=string default="" usage="Close without a sign-off where config signoff.types/signoff.labels require one; records this reason (state waived)"
   flag --reason -r type=string default="" usage="Reason for closing"
   flag --reason-file type=string default="" usage="Read close reason from file (use - for stdin)"
   flag --resolution type=string default="" hidden usage="Alias for --reason (Jira CLI convention)"
   flag --session type=string default="" usage="Claude Code session ID (or set CLAUDE_SESSION_ID env var)"
+  flag --signoff-file type=string default="" usage="Add this sign-off summary (JSON with what_changed, calls_made, removed_or_renamed, where_to_see; - for stdin) and mark the issue awaiting sign-off"
+  flag --signoff-needed type=bool default="false" usage="Mark the closed issue as awaiting the user's sign-off (needs a 'bd-kind: signoff' summary comment, or --signoff-file)"
   flag --suggest-next type=bool default="false" usage="Show newly unblocked issues after closing"
 
 bd codex-hook
@@ -4468,6 +4471,7 @@ bd list
   flag --priority-min type=string default="" usage="Filter by minimum priority (inclusive, 0-4 or P0-P4)"
   flag --ready type=bool default="false" usage="Show only ready issues (no active blockers, same semantics as bd ready)"
   flag --reverse -r type=bool default="false" usage="Invert the sort field's default direction (created/updated/closed default to newest-first, so --sort updated --reverse is oldest-first)"
+  flag --signoff type=string default="" usage="Filter closed issues by sign-off state: pending, approved, disputed, waived (see bd signoff)"
   flag --skip-labels type=bool default="false" usage="Skip label hydration. The labels field in output will be empty regardless of actual labels. Use only when the caller does not depend on label data. Cannot combine with --label, --label-any, --label-pattern, --label-regex, --exclude-label, or --no-labels."
   flag --sort type=string default="" usage="Sort by field: priority, created, updated, closed, status, id, title, type, assignee"
   flag --spec type=string default="" usage="Filter by spec_id prefix"
@@ -6780,6 +6784,38 @@ bd show
   flag --short type=bool default="false" usage="Show compact one-line output per issue"
   flag --thread type=bool default="false" usage="Show full conversation thread (for messages)"
   flag --watch -w type=bool default="false" usage="Watch for changes and auto-refresh display"
+
+bd signoff
+  use: "signoff <id> [--approve | --dispute <text> | --request]"
+  short: "Review, approve or dispute a closed issue's sign-off summary"
+  group: "issues"
+  hidden: false
+  runnable: true
+  long:
+    | Review, approve or dispute a closed issue's sign-off summary.
+    |
+    | An agent that closes an issue may have made calls on the user's behalf. It
+    | leaves a summary (bd close --signoff-file, or a 'bd-kind: signoff' comment) and
+    | the issue awaits the user's sign-off. With no flag, signoff prints the state
+    | and the latest summary.
+    |
+    |   --approve           sign it off
+    |   --dispute "text"    open a follow-up issue (discovered-from this one, same
+    |                       priority) carrying the text; this issue stays closed
+    |   --request           mark an already-closed issue as awaiting sign-off
+    |
+    | State lives in metadata (signoff, signoff_at, signoff_by, signoff_note,
+    | signoff_followup); the needs-signoff label marks the pending ones.
+    |
+    | Examples:
+    |   bd list --signoff pending
+    |   bd signoff bd-123
+    |   bd signoff bd-123 --approve
+    |   bd signoff bd-123 --dispute "stun and stagger must share one formula"
+  flag --approve type=bool default="false" usage="Sign off the closed issue"
+  flag --dispute type=string default="" usage="Dispute the sign-off: opens a follow-up issue carrying this text"
+  flag --note type=string default="" usage="With --approve: a note recorded as signoff_note"
+  flag --request type=bool default="false" usage="Mark a closed issue as awaiting sign-off"
 
 bd sql
   use: "sql <query>"

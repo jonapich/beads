@@ -34,6 +34,7 @@ func registerListAgentFlags(cmd *cobra.Command) {
 	cmd.Flags().String("stage", "", "Filter by workflow stage (metadata stage; see bd update --stage)")
 	cmd.Flags().String("has-link", "", "Filter to issues with at least one typed link of this kind (see bd link add)")
 	cmd.Flags().Bool("awaiting-user", false, "Open issues labelled with any of config awaiting_user.labels (default needs-decision, needs-design); issues with a mock or artifact link sort first")
+	cmd.Flags().String("signoff", "", "Filter closed issues by sign-off state: pending, approved, disputed, waived (see bd signoff)")
 	cmd.Flags().String("stale-claims", "", "In-progress issues whose claim looks abandoned: lease expired more than this long ago, or no lease and no heartbeat/update for this long (e.g. 30m, 2h)")
 }
 
@@ -62,6 +63,20 @@ func gatherListAgentFlags(cmd *cobra.Command, in *listInput) error {
 			return HandleErrorRespectJSON("--has-link cannot be combined with --has-metadata-key")
 		}
 		in.HasMetadataKey = metaLinkPrefix + kind
+	}
+	if state, _ := cmd.Flags().GetString("signoff"); state != "" {
+		state = strings.TrimSpace(state)
+		if !containsString(signoffStates, state) {
+			return HandleErrorRespectJSON("invalid --signoff %q: one of %s", state, strings.Join(signoffStates, ", "))
+		}
+		if in.MetadataFields == nil {
+			in.MetadataFields = map[string]string{}
+		}
+		in.MetadataFields[metaSignoff] = state
+		// Sign-off is a closed-issue state: look there unless told otherwise.
+		if in.Status == "" && !in.AllFlag {
+			in.Status = string(types.StatusClosed)
+		}
 	}
 	in.agent.awaitingUser, _ = cmd.Flags().GetBool("awaiting-user")
 	if in.agent.awaitingUser {

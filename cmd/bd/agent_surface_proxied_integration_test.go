@@ -66,4 +66,21 @@ func TestProxiedServerAgentSurface(t *testing.T) {
 	if err := json.Unmarshal([]byte(jsonPart(ok("list", "--stage", "plan", "--has-link", "artifact", "--json", "--flat"))), &rows); err != nil || len(rows) != 1 || rows[0].ID != issue.ID {
 		t.Errorf("list --stage plan --has-link artifact = %+v (%v)", rows, err)
 	}
+
+	// Sign-off: close with a summary, list it, dispute it.
+	ok("comments", "add", issue.ID, "--kind", "signoff", `{"what_changed":"x","calls_made":["y"]}`)
+	ok("close", issue.ID, "--signoff-needed")
+	if got := ok("show", issue.ID, "--field", "metadata.signoff"); got != "pending\n" {
+		t.Errorf("signoff after close = %q", got)
+	}
+	if show := ok("show", issue.ID); !strings.Contains(show, "SIGN-OFF") {
+		t.Errorf("show lacks SIGN-OFF:\n%s", show)
+	}
+	var disputed struct{ Signoff, Followup string }
+	if err := json.Unmarshal([]byte(jsonPart(ok("signoff", issue.ID, "--dispute", "redo it", "--json"))), &disputed); err != nil || disputed.Signoff != "disputed" || disputed.Followup == "" {
+		t.Errorf("dispute = %+v (%v)", disputed, err)
+	}
+	if got := ok("show", issue.ID, "--field", "status"); got != "closed\n" {
+		t.Errorf("disputed issue status = %q", got)
+	}
 }

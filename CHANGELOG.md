@@ -131,6 +131,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     <duration>` lists in-progress beads whose lease expired more than that long
     ago, or that have no lease and no heartbeat or update for that long.
 
+- **Post-close sign-off.** An agent that closes a bead can leave a summary of
+  the calls it made on the user's behalf, and the bead then waits for the
+  user to approve or dispute it.
+  - `bd close <id> --signoff-file <file|->` adds the summary (a
+    `bd-kind: signoff` comment, JSON with `calls_made`, `what_changed`,
+    `removed_or_renamed`, `where_to_see`) and marks the bead pending;
+    `--signoff-needed` does the same when the summary already exists.
+  - Config `signoff.types` / `signoff.labels` make `bd close` refuse such
+    beads without a summary, unless `--no-signoff "<reason>"` waives it.
+  - `bd signoff <id>` shows the state and summary; `--approve`, `--dispute
+    "text"` (opens a discovered-from follow-up, the bead stays closed) and
+    `--request` change it. State lives in metadata (`signoff`, `signoff_at`,
+    `signoff_by`, `signoff_note`, `signoff_followup`), and the `needs-signoff`
+    label marks pending beads.
+  - `bd list --signoff pending` lists them, `bd prime` counts them, and
+    `bd show` / `bd show --context` print the summary near the top of a
+    closed bead.
+
 - **`arrival_seq`, a commit-ordered create sequence on wisp-plane rows.**
   While a workspace journals, every `ephemeral` or `no_history` bead it creates
   is stamped with the `seq` of its own `create` journal record, in the same

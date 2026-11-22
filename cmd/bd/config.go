@@ -1447,6 +1447,7 @@ var recognizedConfigKeys = map[string]bool{
 	// Agent-memory surface lists (yaml-only; see cmd/bd/agent_surface.go).
 	cfgStageValues: true, cfgLinkKinds: true,
 	cfgAwaitingUserLabels: true, cfgReadyExcludeLabels: true,
+	cfgSignoffTypes: true, cfgSignoffLabels: true,
 }
 
 func isRecognizedConfigKey(key string) bool {

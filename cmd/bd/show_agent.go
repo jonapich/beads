@@ -369,6 +369,8 @@ type contextBundle struct {
 	Stage          string              `json:"stage,omitempty"`
 	StageChangedAt string              `json:"stage_changed_at,omitempty"`
 	Labels         []string            `json:"labels,omitempty"`
+	Signoff        string              `json:"signoff,omitempty"`
+	SignoffSummary string              `json:"signoff_summary,omitempty"`
 	Parent         *contextParent      `json:"parent,omitempty"`
 	Description    string              `json:"description,omitempty"`
 	Design         string              `json:"design,omitempty"`
@@ -421,6 +423,12 @@ func buildContextBundle(ctx context.Context, rd issueops.Reader, d *types.IssueD
 		Links:       issueLinks(is.Metadata),
 	}
 	b.Stage, b.StageChangedAt = issueStage(is.Metadata)
+	b.Signoff = signoffState(is.Metadata)
+	if is.Status == types.StatusClosed {
+		if c, body := latestSignoffSummary(d.Comments); c != nil {
+			b.SignoffSummary = renderSignoffSummary(body)
+		}
+	}
 
 	parentID := ""
 	if d.Parent != nil {
@@ -506,6 +514,7 @@ func parentDecisions(pd *types.IssueDetails) string {
 
 func (b *contextBundle) parts() []contextPart {
 	parts := []contextPart{
+		{"signoff_summary", fmt.Sprintf("bd signoff %s", b.ID), &b.SignoffSummary},
 		{"acceptance", fmt.Sprintf("bd show %s --field acceptance", b.ID), &b.Acceptance},
 		{"description", fmt.Sprintf("bd show %s --field description", b.ID), &b.Description},
 		{"design", fmt.Sprintf("bd show %s --field design", b.ID), &b.Design},
@@ -664,6 +673,16 @@ func renderContextText(b *contextBundle) string {
 			return
 		}
 		fmt.Fprintf(&sb, "\n## %s\n%s\n", title, strings.TrimRight(body, "\n"))
+	}
+	if b.Signoff != "" || b.SignoffSummary != "" {
+		state := b.Signoff
+		if state == "" {
+			state = "no state"
+		}
+		fmt.Fprintf(&sb, "\n## sign-off: %s\n", state)
+		if b.SignoffSummary != "" {
+			sb.WriteString(strings.TrimRight(b.SignoffSummary, "\n") + "\n")
+		}
 	}
 	section("description", b.Description)
 	section("design", b.Design)
