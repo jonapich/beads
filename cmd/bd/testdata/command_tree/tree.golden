@@ -689,6 +689,8 @@ bd comments
     |
     |   # Add a comment from a file
     |   bd comments add bd-123 -f notes.txt
+  flag --kind type=string default="" usage="List only comments of this kind, as structured records"
+  flag --last type=bool default="false" usage="With --kind: return only the most recent one"
   flag --local-time type=bool default="false" usage="Show timestamps in local time instead of UTC"
 
 bd comments add
@@ -707,6 +709,8 @@ bd comments add
     |   bd comments add bd-123 -f notes.txt
   flag --author -a type=string default="" usage="Add author to comment"
   flag --file -f type=string default="" usage="Read comment text from file"
+  flag --json-file type=string default="" usage="Read a JSON comment body from a file (- for stdin); requires --kind"
+  flag --kind type=string default="" usage="Store a kinded comment (e.g. handoff); read back with bd comments <id> --kind <kind>"
 
 bd comments list
   use: "list"
@@ -4333,6 +4337,42 @@ bd link
     |   bd link bd-123 bd-456 --type parent-child
   flag --type -t type=string default="blocks" usage="Dependency type (blocks|tracks|related|parent-child|discovered-from)"
 
+bd link add
+  use: "add <id> --kind <kind> --url <url> [--note <text>]"
+  short: "Attach a typed link (mock, artifact, capture, commit, doc) to an issue"
+  hidden: false
+  runnable: true
+  long:
+    | Attach a typed link to an issue.
+    |
+    | Links are stored in the issue's metadata as link.<kind> arrays. Allowed kinds
+    | come from config link.kinds (default: mock, artifact, capture, commit, doc).
+    | Adding a URL that is already linked under the same kind updates its note.
+    |
+    | Examples:
+    |   bd link add bd-123 --kind mock --url https://example.com/mock.png --note "v2, dark theme"
+    |   bd link add bd-123 --kind commit --url abc1234
+    |   bd list --has-link mock
+  flag --kind type=string default="" usage="Link kind (config link.kinds; default mock, artifact, capture, commit, doc)"
+  flag --note type=string default="" usage="Short note shown with the link"
+  flag --url type=string default="" usage="Link target (URL, path, or commit hash)"
+
+bd link list
+  use: "list <id> [--kind <kind>]"
+  short: "List an issue's typed links"
+  hidden: false
+  runnable: true
+  flag --kind type=string default="" usage="Only list links of this kind"
+
+bd link rm
+  use: "rm <id> --url <url> [--kind <kind>]"
+  aliases: ["remove"]
+  short: "Remove a typed link from an issue"
+  hidden: false
+  runnable: true
+  flag --kind type=string default="" usage="Only remove the link under this kind"
+  flag --url type=string default="" usage="URL of the link to remove"
+
 bd lint
   use: "lint [issue-id...]"
   short: "Check issues for missing template sections"
@@ -4374,6 +4414,7 @@ bd list
   runnable: true
   flag --all type=bool default="false" usage="Show all issues including closed (overrides default filter)"
   flag --assignee -a type=string default="" usage="Filter by assignee"
+  flag --awaiting-user type=bool default="false" usage="Open issues labelled with any of config awaiting_user.labels (default needs-decision, needs-design); issues with a mock or artifact link sort first"
   flag --brief type=bool default="false" usage="Omit the free-form text (description, design, acceptance criteria, notes, payload, waiters) from each row. Filters that read those fields, such as --desc-contains, still select on them. An omitted field is indistinguishable from an empty one in --json; fetch a whole issue with bd show."
   flag --closed-after type=string default="" usage="Filter issues closed after date (YYYY-MM-DD or RFC3339)"
   flag --closed-before type=string default="" usage="Filter issues closed before date (YYYY-MM-DD or RFC3339)"
@@ -4394,6 +4435,7 @@ bd list
   flag --filter-parent type=string default="" hidden usage="Alias for --parent"
   flag --flat type=bool default="false" usage="Disable tree format and use legacy flat list output"
   flag --format type=string default="" usage="Export the dependency graph of the listed issues: 'digraph' (edge list for golang.org/x/tools/cmd/digraph), 'dot' (Graphviz), or a Go template rendered once per edge over .IssueID, .DependsOnID, .Type, .Issue, .Dependency. 'json' is the exception and does not export the graph: it is equivalent to --json, which also wins when both flags are given. 'digraph' and templates print nothing when no listed issue depends on another; 'dot' still prints the nodes"
+  flag --has-link type=string default="" usage="Filter to issues with at least one typed link of this kind (see bd link add)"
   flag --has-metadata-key type=string default="" usage="Filter issues that have this metadata key set"
   flag --id type=string default="" usage="Filter by specific issue IDs (comma-separated or repeated, e.g., bd-1,bd-5,bd-10)"
   flag --include-comments type=bool default="false" usage="Populate each row's comments field with full comment bodies in JSON output (--json only; costs one query per row that has comments). Without it, a row with comments carries comments_omitted=true, so an absent comments field is never mistaken for having none. Text output is unaffected either way."
@@ -4429,6 +4471,8 @@ bd list
   flag --skip-labels type=bool default="false" usage="Skip label hydration. The labels field in output will be empty regardless of actual labels. Use only when the caller does not depend on label data. Cannot combine with --label, --label-any, --label-pattern, --label-regex, --exclude-label, or --no-labels."
   flag --sort type=string default="" usage="Sort by field: priority, created, updated, closed, status, id, title, type, assignee"
   flag --spec type=string default="" usage="Filter by spec_id prefix"
+  flag --stage type=string default="" usage="Filter by workflow stage (metadata stage; see bd update --stage)"
+  flag --stale-claims type=string default="" usage="In-progress issues whose claim looks abandoned: lease expired more than this long ago, or no lease and no heartbeat/update for this long (e.g. 30m, 2h)"
   flag --state type=string default="" hidden usage="Alias for --status"
   flag --status -s type=string default="" usage="Filter by stored status (open, in_progress, blocked, deferred, closed). Comma-separated or repeated for multiple: --status open,in_progress"
   flag --title type=string default="" usage="Filter by title text (case-insensitive substring match)"
@@ -6721,13 +6765,18 @@ bd show
   flag --brief-deps type=bool default="false" usage="Reduce each dependency to its identity fields in JSON output (--json only; drops description, design, notes and acceptance criteria)"
   flag --children type=bool default="false" usage="Show only the children of this issue"
   flag --comments-tail type=int default="0" usage="Render only the last N comments in text output, preceded by one elision line naming how many older ones were hidden (text output only; 0, the default, renders every comment unchanged; N must be >= 0)"
+  flag --context type=bool default="false" usage="Print a compact, size-bounded briefing for an agent starting cold: the issue's text, its parent's decisions, deps, children, links, metadata and recent comments"
+  flag --context-comments type=int default="3" usage="With --context: number of most recent comments to include (default 3)"
   flag --current type=bool default="false" usage="Show the currently active issue (in-progress, hooked, or last touched)"
+  flag --field type=string default="" usage="Print one field raw: description, design, notes, acceptance, title, status, type, priority, assignee, stage, labels, metadata, or metadata.KEY"
   flag --id type=stringArray default="[]" usage="Issue ID (use for IDs that look like flags, e.g., --id=gt--xyz)"
   flag --include-comments type=bool default="false" usage="Stream full comment bodies in JSON output (--json only; may be slow on issues with many comments). Without it the comments field is absent entirely, not truncated: an issue with comments carries comment_count and comments_omitted=true, so check those before reading an absent comments field as none."
   flag --include-dependents type=bool default="false" usage="Stream full dependent issues in JSON output (--json only; may be slow on hub beads)"
   flag --local-time type=bool default="false" usage="Show timestamps in local time instead of UTC (date-only fields are always local)"
   flag --long type=bool default="false" usage="Show all available fields (extended metadata, agent identity, gate fields, etc.)"
+  flag --max-chars type=int default="8000" usage="Character budget for --context (truncated parts name the command that fetches them in full)"
   flag --refs type=bool default="false" usage="Show issues that reference this issue (reverse lookup)"
+  flag --section type=string default="" usage="Print one markdown section (heading through the next heading of the same or higher level). Searches --field, or description, design, notes and acceptance in that order"
   flag --short type=bool default="false" usage="Show compact one-line output per issue"
   flag --thread type=bool default="false" usage="Show full conversation thread (for messages)"
   flag --watch -w type=bool default="false" usage="Watch for changes and auto-refresh display"
@@ -7265,10 +7314,11 @@ bd update
   flag --persistent type=bool default="false" usage="Mark issue as persistent (promote wisp to regular issue)"
   flag --priority -p type=string default="" usage="Priority (0-4 or P0-P4, 0=highest)"
   flag --remove-label type=stringSlice default="[]" usage="Remove labels (repeatable)"
-  flag --session type=string default="" usage="Claude Code session ID for status=closed (or set CLAUDE_SESSION_ID env var)"
+  flag --session type=string default="" usage="Claude Code session ID for status=closed, and recorded as metadata claim.session/claim.at with --claim (or set CLAUDE_SESSION_ID env var)"
   flag --set-labels type=stringSlice default="[]" usage="Set labels, replacing all existing (repeatable)"
   flag --set-metadata type=stringArray default="[]" usage="Set metadata key=value (repeatable, e.g., --set-metadata team=platform)"
   flag --spec-id type=string default="" usage="Link to specification document"
+  flag --stage type=string default="" usage="Set the workflow stage: metadata stage, stage_changed_at and stage_at.<stage> (allowed values: config stage.values, any [a-z][a-z0-9_]* when unset)"
   flag --status -s type=string default="" usage="New status"
   flag --stdin type=bool default="false" annotations={cobra_annotation_mutually_exclusive=["stdin body-file" "stdin description-file" "stdin description" "stdin body" "stdin message"]} usage="Read description from stdin (alias for --body-file -)"
   flag --title type=string default="" usage="New title"

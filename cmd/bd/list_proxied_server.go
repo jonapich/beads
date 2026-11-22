@@ -93,6 +93,7 @@ func runListProxiedPage(ctx context.Context, out io.Writer, in listInput) error 
 		if err != nil {
 			return err
 		}
+		page = applyListAgentPage(in, page)
 		return emitProxiedListJSONResult(page.Items, in, page.HasMore)
 	}
 
@@ -107,7 +108,7 @@ func runListProxiedPage(ctx context.Context, out io.Writer, in listInput) error 
 	if err != nil {
 		return err
 	}
-	issues, hasMore := listPageIssues(page)
+	issues, hasMore := listPageIssues(applyListAgentPage(in, page))
 	return renderProxiedListText(ctx, out, issues, in, hasMore)
 }
 

@@ -393,6 +393,11 @@ pointless).`,
 		if (len(setMetadataFlags) > 0 || len(unsetMetadataFlags) > 0) && cmd.Flags().Changed("metadata") {
 			return HandleErrorRespectJSON("cannot combine --metadata with --set-metadata or --unset-metadata")
 		}
+		agentEdits, err := agentUpdateMetadataEdits(cmd)
+		if err != nil {
+			return HandleErrorRespectJSON("%v", err)
+		}
+		setMetadataFlags = append(setMetadataFlags, agentEdits...)
 		if len(setMetadataFlags) > 0 {
 			updates[storageissueops.OpSetMetadata] = setMetadataFlags
 		}
@@ -1120,7 +1125,8 @@ func init() {
 	// combining --notes with --if-assignee could not previously opt into
 	// overwriting existing notes at all — cobra made --force unpassable
 	// alongside --if-assignee — which is the footgun this lifts.
-	updateCmd.Flags().String("session", "", "Claude Code session ID for status=closed (or set CLAUDE_SESSION_ID env var)")
+	updateCmd.Flags().String("session", "", "Claude Code session ID for status=closed, and recorded as metadata claim.session/claim.at with --claim (or set CLAUDE_SESSION_ID env var)")
+	updateCmd.Flags().String("stage", "", "Set the workflow stage: metadata stage, stage_changed_at and stage_at.<stage> (allowed values: config stage.values, any [a-z][a-z0-9_]* when unset)")
 	// Time-based scheduling flags (GH#820)
 	// Examples:
 	//   --due=+6h           Due in 6 hours

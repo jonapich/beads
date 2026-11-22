@@ -254,7 +254,11 @@ func gatherUpdateInput(ctx context.Context, cmd *cobra.Command) (*updateInput, e
 	if (len(setMetadataFlags) > 0 || len(unsetMetadataFlags) > 0) && cmd.Flags().Changed("metadata") {
 		return nil, HandleErrorRespectJSON("cannot combine --metadata with --set-metadata or --unset-metadata")
 	}
-	in.setMetadata = setMetadataFlags
+	agentEdits, err := agentUpdateMetadataEdits(cmd)
+	if err != nil {
+		return nil, HandleErrorRespectJSON("%v", err)
+	}
+	in.setMetadata = append(setMetadataFlags, agentEdits...)
 	in.unsetMetadata = unsetMetadataFlags
 
 	in.claim, _ = cmd.Flags().GetBool("claim")

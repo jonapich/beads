@@ -277,6 +277,7 @@ func runListCore(cmd *cobra.Command, _ []string) error {
 			}
 			return HandleError("%v", err)
 		}
+		page = applyListAgentPage(in, page)
 		if in.SkipLabels {
 			if err := outputJSON(newSkipLabelsListJSONResponse(page.Items)); err != nil {
 				return err
@@ -307,7 +308,7 @@ func runListCore(cmd *cobra.Command, _ []string) error {
 		}
 		return HandleError("%v", err)
 	}
-	issues, truncated := listPageIssues(page)
+	issues, truncated := listPageIssues(applyListAgentPage(in, page))
 
 	if in.prettyFormat && !jsonOutput {
 		if in.ParentID != "" && !in.ReadyFlag {
@@ -551,6 +552,7 @@ func init() {
 	// Metadata filtering (GH#1406)
 	listCmd.Flags().StringArray("metadata-field", nil, "Filter by metadata field (key=value, repeatable)")
 	listCmd.Flags().String("has-metadata-key", "", "Filter issues that have this metadata key set")
+	registerListAgentFlags(listCmd)
 
 	// Pager control (bd-jdz3)
 	listCmd.Flags().Bool("no-pager", false, "Disable pager output")

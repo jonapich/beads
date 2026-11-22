@@ -100,6 +100,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Size-bounded reads and structured writes for agents.** Agents that start
+  cold can now read exactly the part of a bead they need, and leave structured
+  state on it, without any schema change: stages, links and claim records live
+  in issue metadata, and a comment's kind is a header line in its text.
+  - `bd show <id> --field <name>` prints one field raw (`description`,
+    `design`, `notes`, `acceptance`, `metadata.KEY`, ...), and
+    `--section "<heading>"` prints one markdown section of it.
+  - `bd show <id> --context [--max-chars N] [--context-comments N]` prints a
+    compact briefing: the bead's text, its parent's decisions, deps, children,
+    links, metadata and recent comments. It fits the budget by trimming the
+    longest parts first, and each trimmed part names the command that fetches
+    it in full.
+  - `bd update <id> --stage <name>` records `stage`, `stage_changed_at` and
+    `stage_at.<name>` in metadata (allowed names: config `stage.values`), and
+    `bd list --stage <name>` filters on it.
+  - `bd link add|list|rm` attaches typed links (config `link.kinds`, default
+    mock, artifact, capture, commit, doc) as metadata `link.<kind>` arrays, and
+    `bd list --has-link <kind>` filters on them. `bd link <id1> <id2>` still
+    adds a dependency.
+  - `bd comments add <id> --kind <kind> [--json-file F|-]` stores a kinded
+    comment, and `bd comments <id> --kind <kind> [--last]` returns them as
+    structured records with the JSON body parsed.
+  - `bd list --awaiting-user` lists open beads that carry a config
+    `awaiting_user.labels` label (default needs-decision, needs-design),
+    those with a mock or artifact link first. Config `ready.exclude_labels`
+    keeps labels out of `bd ready`.
+  - `bd update --claim` records `claim.session` and `claim.at` when a session
+    is known (`--session` or `CLAUDE_SESSION_ID`). `bd list --stale-claims
+    <duration>` lists in-progress beads whose lease expired more than that long
+    ago, or that have no lease and no heartbeat or update for that long.
+
 - **`arrival_seq`, a commit-ordered create sequence on wisp-plane rows.**
   While a workspace journals, every `ephemeral` or `no_history` bead it creates
   is stamped with the `seq` of its own `create` journal record, in the same

@@ -120,6 +120,14 @@ var YamlOnlyKeys = map[string]bool{
 	// Hierarchy settings (GH#995)
 	"hierarchy.max-depth": true,
 
+	// Agent-memory surface lists, read through viper by cmd/bd: allowed
+	// stage names, allowed link kinds, the labels that mean "awaiting the
+	// user", and labels bd ready always excludes.
+	"stage.values":         true,
+	"link.kinds":           true,
+	"awaiting_user.labels": true,
+	"ready.exclude_labels": true,
+
 	// Backup settings (must be in yaml so GetValueSource can detect overrides)
 	"backup.enabled":            true,
 	"backup.interval":           true,

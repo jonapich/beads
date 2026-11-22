@@ -38,6 +38,10 @@ type listInput struct {
 
 	repoOverride    string
 	repoOverrideSet bool
+
+	// agent carries the post-query half of the agent-memory filters
+	// (list_agent.go).
+	agent listAgentFilter
 }
 
 func gatherListInput(cmd *cobra.Command) (listInput, error) {
@@ -335,6 +339,10 @@ func gatherListInput(cmd *cobra.Command) (listInput, error) {
 		}
 	}
 
+	if err := gatherListAgentFlags(cmd, &in); err != nil {
+		return in, err
+	}
+
 	in.Labels = utils.NormalizeLabels(in.Labels)
 	in.LabelsAny = utils.NormalizeLabels(in.LabelsAny)
 	in.ExcludeLabels = utils.NormalizeLabels(in.ExcludeLabels)
@@ -361,6 +369,11 @@ func gatherListInput(cmd *cobra.Command) (listInput, error) {
 	// trims client-side - is workapi.SQLLimit's decision, made once, inside the
 	// builder, for every frontend.
 	pageLimit := in.effectiveLimit
+	if in.agent.needsAllRows() {
+		// The stale-claim test runs on the returned rows, so the query must
+		// return all of them; applyListAgentPage applies the limit after it.
+		pageLimit = 0
+	}
 	in.Limit = &pageLimit
 
 	if cmd.Flags().Changed("offset") {

@@ -86,6 +86,14 @@ Examples:
 			}
 		}()
 
+		// Kinded listing reads through issueops.Reader on both routes.
+		if kind, _ := cmd.Flags().GetString("kind"); kind != "" {
+			return runCommentsKind(rootCtx, cmd, args[0], kind)
+		}
+		if last, _ := cmd.Flags().GetBool("last"); last {
+			return HandleErrorRespectJSON("--last requires --kind")
+		}
+
 		if usesProxiedServer() {
 			return runCommentsProxiedServer(cmd, rootCtx, args)
 		}
@@ -208,10 +216,16 @@ Examples:
 
 		issueID := args[0]
 
-		commentText, err := requireTextFromSources("comment text", "use positional args or -f to read from file",
-			cmdTextSources(cmd, args[1:]))
+		commentText, kinded, err := kindedCommentText(cmd, args[1:])
 		if err != nil {
 			return HandleErrorRespectJSON("%v", err)
+		}
+		if !kinded {
+			commentText, err = requireTextFromSources("comment text", "use positional args or -f to read from file",
+				cmdTextSources(cmd, args[1:]))
+			if err != nil {
+				return HandleErrorRespectJSON("%v", err)
+			}
 		}
 
 		author, _ := cmd.Flags().GetString("author")
@@ -324,6 +338,7 @@ func init() {
 	commentsCmd.Flags().Bool("local-time", false, "Show timestamps in local time instead of UTC")
 	commentsAddCmd.Flags().StringP("file", "f", "", "Read comment text from file")
 	commentsAddCmd.Flags().StringP("author", "a", "", "Add author to comment")
+	registerCommentKindFlags()
 
 	// Issue ID completions
 	commentsCmd.ValidArgsFunction = issueIDCompletion

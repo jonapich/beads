@@ -43,6 +43,12 @@ var showCmd = &cobra.Command{
 			}
 		}()
 
+		// The agent reads (--field, --section, --context) are route-agnostic:
+		// they go through issueops.Reader on both routes.
+		if agentIn, ok := gatherShowAgentInput(cmd); ok {
+			return runShowAgent(rootCtx, cmd, args, agentIn)
+		}
+
 		if usesProxiedServer() {
 			return runShowProxiedServer(cmd, rootCtx, args)
 		}
@@ -334,6 +340,7 @@ func init() {
 		"comment_count and comments_omitted=true, so check those before reading an absent comments field as none.")
 	showCmd.Flags().Bool("brief-deps", false, "Reduce each dependency to its identity fields in JSON output (--json only; drops description, design, notes and acceptance criteria)")
 	showCmd.Flags().Int("comments-tail", 0, "Render only the last N comments in text output, preceded by one elision line naming how many older ones were hidden (text output only; 0, the default, renders every comment unchanged; N must be >= 0)")
+	registerShowAgentFlags(showCmd)
 	showCmd.ValidArgsFunction = issueIDCompletion
 	rootCmd.AddCommand(showCmd)
 }

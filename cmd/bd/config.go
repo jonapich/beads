@@ -1444,6 +1444,9 @@ var recognizedConfigKeys = map[string]bool{
 	// deleting records.
 	"events-journal": true, "events-journal-auto-prune": true,
 	"events-journal-retain-days": true, "events-journal-retain-rows": true,
+	// Agent-memory surface lists (yaml-only; see cmd/bd/agent_surface.go).
+	cfgStageValues: true, cfgLinkKinds: true,
+	cfgAwaitingUserLabels: true, cfgReadyExcludeLabels: true,
 }
 
 func isRecognizedConfigKey(key string) bool {

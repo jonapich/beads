@@ -83,6 +83,9 @@ func gatherReadyInput(cmd *cobra.Command, resolveCap func(*cobra.Command) (int, 
 	in.Labels, _ = cmd.Flags().GetStringSlice("label")
 	in.LabelsAny, _ = cmd.Flags().GetStringSlice("label-any")
 	in.ExcludeLabels, _ = cmd.Flags().GetStringSlice("exclude-label")
+	// Labels config ready.exclude_labels names are always excluded, so work
+	// parked for a human (needs-decision, ...) never reaches an agent's queue.
+	in.ExcludeLabels = append(in.ExcludeLabels, configList(cfgReadyExcludeLabels, nil)...)
 	in.LabelPattern, _ = cmd.Flags().GetString("label-pattern")
 	in.LabelRegex, _ = cmd.Flags().GetString("label-regex")
 	in.IssueType, _ = cmd.Flags().GetString("type")

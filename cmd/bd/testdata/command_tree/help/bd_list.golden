@@ -6,6 +6,7 @@ Usage:
 Flags:
       --all                          Show all issues including closed (overrides default filter)
   -a, --assignee string              Filter by assignee
+      --awaiting-user                Open issues labelled with any of config awaiting_user.labels (default needs-decision, needs-design); issues with a mock or artifact link sort first
       --brief                        Omit the free-form text (description, design, acceptance criteria, notes, payload, waiters) from each row. Filters that read those fields, such as --desc-contains, still select on them. An omitted field is indistinguishable from an empty one in --json; fetch a whole issue with bd show.
       --closed-after string          Filter issues closed after date (YYYY-MM-DD or RFC3339)
       --closed-before string         Filter issues closed before date (YYYY-MM-DD or RFC3339)
@@ -25,6 +26,7 @@ Flags:
       --external-ref string          Filter by exact external_ref value
       --flat                         Disable tree format and use legacy flat list output
       --format string                Export the dependency graph of the listed issues: 'digraph' (edge list for golang.org/x/tools/cmd/digraph), 'dot' (Graphviz), or a Go template rendered once per edge over .IssueID, .DependsOnID, .Type, .Issue, .Dependency. 'json' is the exception and does not export the graph: it is equivalent to --json, which also wins when both flags are given. 'digraph' and templates print nothing when no listed issue depends on another; 'dot' still prints the nodes
+      --has-link string              Filter to issues with at least one typed link of this kind (see bd link add)
       --has-metadata-key string      Filter issues that have this metadata key set
   -h, --help                         help for list
       --id string                    Filter by specific issue IDs (comma-separated or repeated, e.g., bd-1,bd-5,bd-10)
@@ -61,6 +63,8 @@ Flags:
       --skip-labels                  Skip label hydration. The labels field in output will be empty regardless of actual labels. Use only when the caller does not depend on label data. Cannot combine with --label, --label-any, --label-pattern, --label-regex, --exclude-label, or --no-labels.
       --sort string                  Sort by field: priority, created, updated, closed, status, id, title, type, assignee
       --spec string                  Filter by spec_id prefix
+      --stage string                 Filter by workflow stage (metadata stage; see bd update --stage)
+      --stale-claims string          In-progress issues whose claim looks abandoned: lease expired more than this long ago, or no lease and no heartbeat/update for this long (e.g. 30m, 2h)
   -s, --status string                Filter by stored status (open, in_progress, blocked, deferred, closed). Comma-separated or repeated for multiple: --status open,in_progress
       --title string                 Filter by title text (case-insensitive substring match)
       --title-contains string        Filter by title substring (case-insensitive)
