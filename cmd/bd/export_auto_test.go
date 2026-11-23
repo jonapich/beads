@@ -1234,6 +1234,193 @@ func TestShouldExport(t *testing.T) {
 	}
 }
 
+// TestShouldExport_NegativeIntervalNeverThrottles pins the export.interval
+// negative contract at the decision function: a write a nanosecond ago is
+// still exported. 0 is not special-cased here (maybeAutoExport turns it into
+// the 60s default before this runs), so it keeps its "elapsed >= 0" result.
+func TestShouldExport_NegativeIntervalNeverThrottles(t *testing.T) {
+	recent := &exportAutoState{Timestamp: time.Now()}
+	for _, interval := range []time.Duration{-time.Nanosecond, -time.Second, -time.Hour} {
+		if !shouldExport(recent, interval) {
+			t.Errorf("shouldExport(just exported, %s) = false, want true", interval)
+		}
+	}
+	if shouldExport(recent, time.Minute) {
+		t.Error("shouldExport(just exported, 1m) = true, want false (positive interval must still throttle)")
+	}
+}
+
+// fakeIntervalStore is a fakeHeadOnlyStore whose commit hash a test can move,
+// standing in for "a bd command changed data". It is not a StateHasher, so
+// maybeAutoExport detects change through GetCurrentCommit, and not a
+// DiffStore, so every export is a full one: both keep the test about the
+// throttle and nothing else.
+type fakeIntervalStore struct {
+	fakeHeadOnlyStore
+	commit string
+}
+
+func (f *fakeIntervalStore) GetCurrentCommit(_ context.Context) (string, error) {
+	return f.commit, nil
+}
+
+// change simulates one data-changing command: a new commit hash and an issue
+// with the given id/title in the store.
+func (f *fakeIntervalStore) change(commit, id, title string) {
+	f.commit = commit
+	for _, iss := range f.issues {
+		if iss.ID == id {
+			iss.Title = title
+			return
+		}
+	}
+	f.issues = append(f.issues, &types.Issue{
+		ID: id, Title: title, Status: types.StatusOpen, Priority: 2, IssueType: types.TypeTask,
+	})
+}
+
+// TestMaybeAutoExport_NegativeIntervalExportsEveryChange drives maybeAutoExport
+// end to end: with a negative export.interval, back-to-back changing commands
+// with no wait between them each reach issues.jsonl. The controls show that
+// the 60s default and an explicit 0 (which falls back to 60s) still throttle
+// the second change, so the test fails if negatives stop being special.
+func TestMaybeAutoExport_NegativeIntervalExportsEveryChange(t *testing.T) {
+	cases := []struct {
+		interval      string
+		wantSecondOut bool
+	}{
+		{"-1", true},
+		{"-1s", true},
+		{"60s", false}, // control: the default still throttles
+		{"0", false},   // control: 0 keeps falling back to the 60s default
+	}
+	for _, tc := range cases {
+		t.Run("interval="+tc.interval, func(t *testing.T) {
+			initConfigForTest(t)
+			config.Set("export.auto", true)
+			config.Set("export.interval", tc.interval)
+
+			saveAndRestoreGlobals(t)
+			fake := &fakeIntervalStore{}
+			store = fake
+			dir := autoExportTestDir(t)
+			beadsDir := filepath.Join(dir, ".beads")
+			exportPath := filepath.Join(beadsDir, "issues.jsonl")
+
+			fake.change("c1", "iv-a", "Alpha")
+			if err := maybeAutoExport(context.Background(), false); err != nil {
+				t.Fatalf("first maybeAutoExport: %v", err)
+			}
+			if got := loadIssueTitles(t, exportPath); got["iv-a"] != "Alpha" {
+				t.Fatalf("first export titles = %v, want iv-a=Alpha", got)
+			}
+
+			// Change and export again with no wait in between.
+			fake.change("c2", "iv-b", "Beta")
+			if err := maybeAutoExport(context.Background(), false); err != nil {
+				t.Fatalf("second maybeAutoExport: %v", err)
+			}
+			titles := loadIssueTitles(t, exportPath)
+			_, hasB := titles["iv-b"]
+			if hasB != tc.wantSecondOut {
+				t.Fatalf("after second change with interval %q: iv-b exported = %v, want %v (titles %v)", tc.interval, hasB, tc.wantSecondOut, titles)
+			}
+			if !tc.wantSecondOut {
+				return
+			}
+
+			// And a third, to show it is every change, not just the second.
+			fake.change("c3", "iv-a", "Alpha renamed")
+			if err := maybeAutoExport(context.Background(), false); err != nil {
+				t.Fatalf("third maybeAutoExport: %v", err)
+			}
+			if got := loadIssueTitles(t, exportPath); got["iv-a"] != "Alpha renamed" {
+				t.Fatalf("third change not exported immediately: titles %v", got)
+			}
+		})
+	}
+}
+
+// TestMaybeAutoExport_NegativeIntervalNoChangeStillSkips pins that a negative
+// interval removes the throttle only: the cheap commit-hash check still runs
+// first, so an unchanged store does not rewrite the export.
+func TestMaybeAutoExport_NegativeIntervalNoChangeStillSkips(t *testing.T) {
+	initConfigForTest(t)
+	config.Set("export.auto", true)
+	config.Set("export.interval", "-1")
+
+	saveAndRestoreGlobals(t)
+	fake := &fakeIntervalStore{}
+	store = fake
+	dir := autoExportTestDir(t)
+	beadsDir := filepath.Join(dir, ".beads")
+	exportPath := filepath.Join(beadsDir, "issues.jsonl")
+
+	fake.change("c1", "nc-a", "Alpha")
+	if err := maybeAutoExport(context.Background(), false); err != nil {
+		t.Fatalf("first maybeAutoExport: %v", err)
+	}
+	stateBefore := loadExportAutoState(beadsDir)
+
+	// Make the file visibly older so a rewrite would be detectable.
+	old := time.Now().Add(-time.Hour)
+	if err := os.Chtimes(exportPath, old, old); err != nil {
+		t.Fatal(err)
+	}
+
+	// Same commit hash: nothing changed, so even with no throttle this skips.
+	if err := maybeAutoExport(context.Background(), false); err != nil {
+		t.Fatalf("second maybeAutoExport: %v", err)
+	}
+	after, err := os.Stat(exportPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !after.ModTime().Equal(old) {
+		t.Errorf("export was rewritten with no change (mtime %s, want %s)", after.ModTime(), old)
+	}
+	if got := loadExportAutoState(beadsDir); !got.Timestamp.Equal(stateBefore.Timestamp) {
+		t.Errorf("export state timestamp moved with no change: %s -> %s", stateBefore.Timestamp, got.Timestamp)
+	}
+}
+
+// TestExportInterval_ConfigParsing proves, through the real config layer, how
+// the raw export.interval values reach maybeAutoExport: negatives (bare "-1"
+// and "-1s") come out negative, while unset, 0 and a non-duration string come
+// out as 0 and so keep the 60s fallback.
+func TestExportInterval_ConfigParsing(t *testing.T) {
+	cases := []struct {
+		raw      interface{} // nil = leave unset
+		wantNeg  bool
+		wantZero bool
+	}{
+		{raw: nil, wantNeg: false, wantZero: false}, // registered default "60s"
+		{raw: "-1", wantNeg: true},
+		{raw: "-1s", wantNeg: true},
+		{raw: -1, wantNeg: true}, // YAML `export.interval: -1`
+		{raw: "0", wantZero: true},
+		{raw: "abc", wantZero: true},
+	}
+	for _, tc := range cases {
+		t.Run(fmt.Sprint(tc.raw), func(t *testing.T) {
+			initConfigForTest(t)
+			if tc.raw != nil {
+				config.Set("export.interval", tc.raw)
+			}
+			got := config.GetDuration("export.interval")
+			if (got < 0) != tc.wantNeg {
+				t.Errorf("GetDuration(%v) = %s, negative = %v, want %v", tc.raw, got, got < 0, tc.wantNeg)
+			}
+			if (got == 0) != tc.wantZero {
+				t.Errorf("GetDuration(%v) = %s, zero = %v, want %v", tc.raw, got, got == 0, tc.wantZero)
+			}
+			if tc.raw == nil && got != 60*time.Second {
+				t.Errorf("unset export.interval = %s, want 60s", got)
+			}
+		})
+	}
+}
+
 // TestIssueRecordsInJSONL_CountsAndOrdersInScopeIDs pins the parse the
 // pre-export guards read: exactly one record per id, memories and tombstones
 // and id-less lines skipped, sorted by id. Both guards now take their counts

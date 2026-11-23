@@ -3527,7 +3527,7 @@ Auto-Export (config.yaml):
   Keys:
     export.auto       Enable/disable auto-export (default: false)
     export.path       Output filename relative to .beads/ (default: issues.jsonl)
-    export.interval   Minimum time between exports (default: 60s)
+    export.interval   Minimum time between exports; negative (e.g. -1) = after every change (default: 60s)
     export.git-add    Auto-stage the export file (default: false)
 
 Auto-Import (config.yaml):
@@ -3573,6 +3573,7 @@ Examples:
   bd config set export.path "beads.jsonl"              # Custom export filename
   bd config set import.path "beads.jsonl"              # Custom import filename
   bd config set export.git-add true                    # Also stage the export file
+  bd config set export.interval -- -1                  # Export after every change (no throttle)
   bd config set jira.url "https://company.atlassian.net"
   bd config set jira.project "PROJ"
   bd config set status.custom "awaiting_review,awaiting_testing"

@@ -301,11 +301,12 @@ func storeStateHash(ctx context.Context) (string, error) {
 
 // shouldExport reports whether the throttle window has elapsed, or whether
 // this is the first auto-export attempt. It returns false only when a recent
-// export exists and the configured interval has not elapsed.
+// export exists and the configured interval has not elapsed. A negative
+// interval (export.interval -1) disables the throttle: always export.
 //
 // Extracted from Jeremy Longshore's GH#4061 throttle-decision refactor.
 func shouldExport(state *exportAutoState, interval time.Duration) bool {
-	if state.Timestamp.IsZero() {
+	if interval < 0 || state.Timestamp.IsZero() {
 		return true
 	}
 	return time.Since(state.Timestamp) >= interval

@@ -144,7 +144,7 @@ Any key whose name contains `api_key`, `api-key`, `secret`, `token`, or `passwor
 | `audit.enabled` | — | `BD_AUDIT_ENABLED` | `false` | Enable the optional JSONL interaction sidecar at `.beads/interactions.jsonl`, written by `bd audit record` / `bd audit label`. While disabled, `bd init` does not create the file and `bd audit record` / `bd audit label` refuse to write. Issue history is always recorded in the database either way — see `bd history <id> --events` |
 | `export.auto` | — | — | `false` | Refresh `.beads/issues.jsonl` export after every write; not cross-machine sync |
 | `export.path` | — | — | `issues.jsonl` | Output filename relative to `.beads/` |
-| `export.interval` | — | — | `60s` | Minimum time between auto-exports |
+| `export.interval` | — | — | `60s` | Minimum time between auto-exports. A negative value (e.g. `-1`) exports after every change (no throttle), so viewers such as `bv` see edits at once. `0` and values that are not a duration fall back to `60s` |
 | `export.git-add` | — | — | `false` | Run `git add` on the export file |
 | `import.auto` | — | `BD_IMPORT_AUTO` | `true` | Master switch for automatic JSONL imports: the git-hook fallback used when no Dolt remote is configured, and the empty-database recovery import when `.beads/issues.jsonl` exists but the database is empty. `false` disables all auto-imports; explicit `bd import` always works |
 | `import.path` | — | — | `issues.jsonl` | Input filename relative to `.beads/` for implied JSONL imports (including `bd init --from-jsonl` and empty-DB auto-import); use relative paths for portability |
@@ -178,6 +178,14 @@ Workflows that depend on a fresh, git-staged JSONL file should opt in:
 bd config set export.auto true
 bd config set export.git-add true
 ```
+
+`export.interval` throttles auto-export to one run per interval (`60s` by
+default), and bd exits after each command, so a write that lands inside the
+window is not exported until a later write. Viewers that must see every edit at
+once, such as `bv`, should set a negative interval, for example
+`bd config set export.interval -- -1` (the `--` stops the CLI reading `-1` as a
+flag). A negative value exports after every command that changed data; `0` still
+means the `60s` default.
 
 Use `bd dolt push` / `bd dolt pull` for sync and `bd backup` for restorable
 database backups.
@@ -649,7 +657,7 @@ backup:
 export:
   auto: false
   path: issues.jsonl
-  interval: 60s
+  interval: 60s   # negative (e.g. -1): export after every change
   git-add: false
 
 # Optional Dolt federation
