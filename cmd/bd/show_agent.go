@@ -14,11 +14,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"runtime"
 	"sort"
 	"strings"
 	"unicode/utf8"
 
 	"github.com/spf13/cobra"
+	"github.com/steveyegge/beads/internal/remedy"
 	"github.com/steveyegge/beads/internal/types"
 	"github.com/steveyegge/beads/issueops"
 )
@@ -512,19 +514,26 @@ func parentDecisions(pd *types.IssueDetails) string {
 	return pd.Notes
 }
 
+// parts lists the bundle's budgeted text parts, each with the command that
+// fetches it in full. The IDs are the store's, which holds a collaborator's
+// issues after bd dolt pull, so each goes into a command as one shell word, or
+// as a placeholder with the ID named escaped after the command
+// (remedy.CommandArg). A plain ID is printed as it is.
 func (b *contextBundle) parts() []contextPart {
+	id, idNote := remedy.CommandArg(runtime.GOOS, b.ID, "<issue-id>")
 	parts := []contextPart{
-		{"signoff_summary", fmt.Sprintf("bd signoff %s", b.ID), &b.SignoffSummary},
-		{"acceptance", fmt.Sprintf("bd show %s --field acceptance", b.ID), &b.Acceptance},
-		{"description", fmt.Sprintf("bd show %s --field description", b.ID), &b.Description},
-		{"design", fmt.Sprintf("bd show %s --field design", b.ID), &b.Design},
+		{"signoff_summary", fmt.Sprintf("bd signoff %s%s", id, idNote), &b.SignoffSummary},
+		{"acceptance", fmt.Sprintf("bd show %s --field acceptance%s", id, idNote), &b.Acceptance},
+		{"description", fmt.Sprintf("bd show %s --field description%s", id, idNote), &b.Description},
+		{"design", fmt.Sprintf("bd show %s --field design%s", id, idNote), &b.Design},
 	}
 	if b.Parent != nil {
-		fetch := fmt.Sprintf("bd show %s --section Decisions", b.Parent.ID)
+		parent, parentNote := remedy.CommandArg(runtime.GOOS, b.Parent.ID, "<parent-id>")
+		fetch := fmt.Sprintf("bd show %s --section Decisions%s", parent, parentNote)
 		parts = append(parts, contextPart{"parent.decisions", fetch, &b.Parent.Decisions})
 	}
 	for i := range b.Comments {
-		parts = append(parts, contextPart{"comments", fmt.Sprintf("bd comments %s", b.ID), &b.Comments[i].Text})
+		parts = append(parts, contextPart{"comments", fmt.Sprintf("bd comments %s%s", id, idNote), &b.Comments[i].Text})
 	}
 	return parts
 }
@@ -706,8 +715,11 @@ func renderContextText(b *contextBundle) string {
 			fmt.Fprintf(&sb, "[+%d more: %s]\n", more, fetch)
 		}
 	}
-	refs("deps", b.Dependencies, b.moreDeps, "bd dep list "+b.ID)
-	refs("children", b.Children, b.moreChildren, "bd show "+b.ID+" --children")
+	// The ID is the store's: one shell word in the commands that fetch the
+	// rest, or a placeholder named escaped after them (remedy.CommandArg).
+	idArg, idNote := remedy.CommandArg(runtime.GOOS, b.ID, "<issue-id>")
+	refs("deps", b.Dependencies, b.moreDeps, "bd dep list "+idArg+idNote)
+	refs("children", b.Children, b.moreChildren, "bd show "+idArg+" --children"+idNote)
 	if len(b.Links) > 0 {
 		sb.WriteString("\n## links\n")
 		for _, l := range b.Links {

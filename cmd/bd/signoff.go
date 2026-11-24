@@ -25,10 +25,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"runtime"
 	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
+	"github.com/steveyegge/beads/internal/remedy"
 	"github.com/steveyegge/beads/internal/types"
 	"github.com/steveyegge/beads/internal/ui"
 	"github.com/steveyegge/beads/issueops"
@@ -373,8 +375,11 @@ func planCloseSignoff(ctx context.Context, cmd *cobra.Command, args []string) (*
 			plan.items = append(plan.items, closeSignoffItem{id: id, state: signoffWaived, note: strings.TrimSpace(waiveReason)})
 		case required:
 			if c, _ := latestSignoffSummary(d.Comments); c == nil && plan.summary == "" {
-				return nil, fmt.Errorf("%s needs a sign-off summary before it closes: pass --signoff-file <file|-> with %s, add one with 'bd comments add %s --kind signoff --json-file <file>', or pass --no-signoff \"<reason>\"",
-					id, signoffSummaryExample, id)
+				// The ID is the store's (a resolved partial ID): one shell word in the
+				// command, or a placeholder named escaped after the message.
+				idArg, idNote := remedy.CommandArg(runtime.GOOS, id, "<issue-id>")
+				return nil, fmt.Errorf("%s needs a sign-off summary before it closes: pass --signoff-file <file|-> with %s, add one with 'bd comments add %s --kind signoff --json-file <file>', or pass --no-signoff \"<reason>\"%s",
+					id, signoffSummaryExample, idArg, idNote)
 			}
 			plan.items = append(plan.items, closeSignoffItem{id: id, state: signoffPending})
 		}
@@ -492,7 +497,8 @@ Examples:
 				return HandleErrorRespectJSON("%s is %s; sign-off applies to closed issues", id, d.Status)
 			}
 			if c, _ := latestSignoffSummary(d.Comments); c == nil {
-				fmt.Fprintf(os.Stderr, "%s %s has no sign-off summary yet; add one with 'bd comments add %s --kind signoff --json-file <file>'\n", ui.RenderWarn("!"), id, id)
+				idArg, idNote := remedy.CommandArg(runtime.GOOS, id, "<issue-id>")
+				fmt.Fprintf(os.Stderr, "%s %s has no sign-off summary yet; add one with 'bd comments add %s --kind signoff --json-file <file>'%s\n", ui.RenderWarn("!"), id, idArg, idNote)
 			}
 			if err := applySignoffState(ctx, id, signoffPending, "", ""); err != nil {
 				return HandleErrorRespectJSON("signoff: %s: %v", id, err)
