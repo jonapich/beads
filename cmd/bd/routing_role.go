@@ -164,10 +164,14 @@ func warnIfRolePathIsNotARepo(repoPath string) {
 	fmt.Fprintln(os.Stderr, "       or select that project explicitly with bd -C <dir>.")
 }
 
+// detectUserRoleAt reads the role at a repo path (git subprocesses). A variable
+// so a test can see when, relative to a read session, the detection runs.
+var detectUserRoleAt = routing.DetectUserRole
+
 func detectUserRoleForActiveRepo() (routing.UserRole, error) {
 	repoPath := activeRepoPathForRouting()
 	warnIfRolePathIsNotARepo(repoPath)
-	return routing.DetectUserRole(repoPath)
+	return detectUserRoleAt(repoPath)
 }
 
 // detectUserRoleForRouting returns the user role for the routing decision cfg

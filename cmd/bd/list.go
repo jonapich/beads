@@ -8,6 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/steveyegge/beads/internal/metrics"
+	"github.com/steveyegge/beads/internal/routing"
 	"github.com/steveyegge/beads/internal/storage"
 	"github.com/steveyegge/beads/internal/types"
 	"github.com/steveyegge/beads/internal/ui"
@@ -232,7 +233,7 @@ func runListCore(cmd *cobra.Command, _ []string) error {
 	// and the reads after the page never hold the store's lock. Every store call
 	// until then takes sessionCtx.
 	sessionCtx, endSession := storage.BeginReadSession(ctx, store)
-	defer endSession()
+	defer func() { endSession() }() // endSession may be replaced below
 
 	cfg, err := workapi.LoadStoreListConfig(sessionCtx, store)
 	if err != nil {
@@ -248,7 +249,12 @@ func runListCore(cmd *cobra.Command, _ []string) error {
 	// routing check reads the local store (in the session), but opening the target
 	// opens another store, which may be this same data directory and would then
 	// wait for ever on the lock the session holds.
-	if repoPath, rule := determineAutoRoutedRepoPath(sessionCtx, store); repoPath != "" && repoPath != "." {
+	// The role detection a role-based route needs runs git, so the helper ends the
+	// session around it (and begins another if the answer is not to route).
+	var repoPath string
+	var rule routing.RoutingRule
+	repoPath, rule, sessionCtx, endSession = determineAutoRoutedRepoPathInSession(ctx, store, sessionCtx, endSession)
+	if repoPath != "" && repoPath != "." {
 		endSession()
 		routedStore, err := openAutoRoutedTarget(ctx, repoPath, rule, false)
 		if err != nil {

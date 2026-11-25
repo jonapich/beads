@@ -229,14 +229,32 @@ func runAutoExport(ctx context.Context, allowEmptyOverwrite bool, endSession fun
 	// preserve its stale JSONL line forever even though the guard just
 	// cleared the export to run. A full export needs nothing — it rewrites
 	// from the store.
-	issueCount, memoryCount, dirtyIDs, didIncremental, err := tryIncrementalExport(
-		ctx, fullPath, state.LastDiffAnchor, doltWorkingRef, state.LastDirtyIDs, provenDeleted,
+	//
+	// Both writers end the session themselves, after their last store read and
+	// before they read the existing file back or write the new one.
+	sessionEnded := false
+	endTracked := func() {
+		sessionEnded = true
+		endSession()
+	}
+	issueCount, memoryCount, dirtyIDs, didIncremental, err := tryIncrementalExportSession(
+		ctx, fullPath, state.LastDiffAnchor, doltWorkingRef, state.LastDirtyIDs, provenDeleted, endTracked,
 	)
 	if err != nil {
 		debug.Logf("auto-export: incremental failed (%v); falling back to full\n", err)
 	}
 	if !didIncremental {
-		issueCount, memoryCount, err = exportToFile(ctx, fullPath, false)
+		// A patch that failed while rewriting the file had already ended the
+		// session, and the full export reads again: it gets a session of its own.
+		// Every other way the patch declines leaves the first one open.
+		exportCtx, endExport := ctx, endTracked
+		if sessionEnded {
+			var endNew func()
+			exportCtx, endNew = storage.BeginReadSession(ctx, store)
+			defer endNew()
+			endExport = endNew
+		}
+		issueCount, memoryCount, err = exportToFileSession(exportCtx, fullPath, false, endExport)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Warning: auto-export failed: %v\n", err)
 			return nil
@@ -747,16 +765,17 @@ func buildAutoExportFilter(ctx context.Context) (types.IssueFilter, map[string]b
 // a partial or truncated export. This is the full auto-export writer;
 // `bd export -o` goes through runExport and its exportSource instead.
 func exportToFile(ctx context.Context, path string, includeMemories bool) (issueCount, memoryCount int, err error) {
-	w, err := atomicfile.Create(path, 0o644)
-	if err != nil {
-		return 0, 0, fmt.Errorf("failed to create export file: %w", err)
-	}
-	defer func() {
-		if err != nil {
-			_ = w.Abort()
-		}
-	}()
+	return exportToFileSession(ctx, path, includeMemories, func() {})
+}
 
+// exportToFileSession is exportToFile for a caller that holds a read session
+// (ctx carries it): endSession is called once the last store read is done, so
+// the existing-file guard, the temp file, the encoding and the rename that
+// follow never hold the store's lock. Everything the write needs (issues, their
+// relations, the store-presence set, the memories) is read first; a relation
+// load error is kept until the guard has had its say, so the guard's refusal
+// still wins over it exactly as before.
+func exportToFileSession(ctx context.Context, path string, includeMemories bool, endSession func()) (issueCount, memoryCount int, err error) {
 	filter, infraTypeSet := buildAutoExportFilter(ctx)
 	issues, err := store.SearchIssues(ctx, "", filter)
 	if err != nil {
@@ -784,23 +803,51 @@ func exportToFile(ctx context.Context, path string, includeMemories bool) (issue
 		return 0, 0, err
 	}
 
-	if err := guardAutoExportOverwrite(path, infraTypeSet, includeMemories, storeIDs); err != nil {
-		return 0, 0, err
-	}
-
-	// Bulk-load relational data
+	// Bulk-load relational data. The error is held, not returned: the guard below
+	// ran first when the relations were loaded after it, and its refusal is the
+	// answer when both would fail.
+	var relations exportRelations
+	var relationsErr error
 	if len(issues) > 0 {
 		issueIDs := make([]string, len(issues))
 		for i, issue := range issues {
 			issueIDs[i] = issue.ID
 		}
-		// Returned explicitly so the named err is set and the deferred
-		// Abort drops the temp file, keeping the previous export (GH#6870).
-		relations, err := loadClassicExportRelations(ctx, issueIDs)
-		if err != nil {
-			return 0, 0, err
-		}
+		relations, relationsErr = loadClassicExportRelations(ctx, issueIDs)
+	}
 
+	// Memories are store reads too; read them while the session is open. A failed
+	// read is not an export error: the memory section is left out, as before.
+	var memoryConfig map[string]string
+	if includeMemories {
+		if allConfig, cfgErr := store.GetAllConfig(ctx); cfgErr == nil {
+			memoryConfig = allConfig
+		}
+	}
+
+	// Every store read is done. The rest is file work, outside the store's lock.
+	endSession()
+
+	if err := guardAutoExportOverwrite(path, infraTypeSet, includeMemories, storeIDs); err != nil {
+		return 0, 0, err
+	}
+	// Returned explicitly so the named err is set and the deferred Abort drops
+	// the temp file, keeping the previous export (GH#6870).
+	if relationsErr != nil {
+		return 0, 0, relationsErr
+	}
+
+	w, err := atomicfile.Create(path, 0o644)
+	if err != nil {
+		return 0, 0, fmt.Errorf("failed to create export file: %w", err)
+	}
+	defer func() {
+		if err != nil {
+			_ = w.Abort()
+		}
+	}()
+
+	if len(issues) > 0 {
 		for _, issue := range issues {
 			issue.Labels = relations.labels[issue.ID]
 			issue.Dependencies = relations.deps[issue.ID]
@@ -834,8 +881,7 @@ func exportToFile(ctx context.Context, path string, includeMemories bool) (issue
 
 	// Write memories
 	if includeMemories {
-		allConfig, err := store.GetAllConfig(ctx)
-		if err == nil {
+		if allConfig := memoryConfig; allConfig != nil {
 			fullPrefix := kvPrefix + memoryPrefix
 			// Sort keys for deterministic output order (GH#3474).
 			var memKeys []string
@@ -1360,6 +1406,17 @@ func pathInsideDir(path, dir string) bool {
 // no-op cycle self-heal: a carried id that produces no new diff simply
 // drops out instead of accumulating forever.
 func tryIncrementalExport(ctx context.Context, fullPath, fromCommit, toCommit string, carryIDs, forcedRemovals []string) (issueCount, memoryCount int, dirtyIDs []string, didIncremental bool, err error) {
+	return tryIncrementalExportSession(ctx, fullPath, fromCommit, toCommit, carryIDs, forcedRemovals, func() {})
+}
+
+// tryIncrementalExportSession is tryIncrementalExport for a caller that holds a
+// read session (ctx carries it). endSession is called once the patch's last
+// store read is done and before the existing file is read back and rewritten,
+// which touch no store. It is not called on a path that declines or fails before
+// that point, so the caller's session is still open for the full export it then
+// falls back to; when the rewrite itself fails the session has ended, and the
+// caller must begin another before reading again.
+func tryIncrementalExportSession(ctx context.Context, fullPath, fromCommit, toCommit string, carryIDs, forcedRemovals []string, endSession func()) (issueCount, memoryCount int, dirtyIDs []string, didIncremental bool, err error) {
 	if fromCommit == "" {
 		debug.Logf("auto-export: incremental skipped — no prior commit hash recorded\n")
 		return 0, 0, nil, false, nil
@@ -1403,6 +1460,7 @@ func tryIncrementalExport(ctx context.Context, fullPath, fromCommit, toCommit st
 		// Nothing changed and nothing carried over. Still a valid
 		// "incremental" outcome: no issues to rewrite, just refresh the
 		// file in place so nothing regresses.
+		endSession() // no more store reads: the rewrite is file work only
 		issueCount, memoryCount, err = rewriteExportFile(fullPath, nil, nil, nil)
 		if err != nil {
 			return 0, 0, nil, false, err
@@ -1471,6 +1529,7 @@ func tryIncrementalExport(ctx context.Context, fullPath, fromCommit, toCommit st
 		removed[id] = true
 	}
 
+	endSession() // every read is done: reading the file back and rewriting it is file work only
 	issueCount, memoryCount, err = rewriteExportFile(fullPath, records, removed, upsertIDs)
 	if err != nil {
 		return 0, 0, nil, false, err

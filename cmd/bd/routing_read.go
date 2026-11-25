@@ -67,7 +67,44 @@ func getRoutingConfigValue(ctx context.Context, store storage.DoltStorage, key s
 	return strings.TrimSpace(dbValue)
 }
 
+// determineAutoRoutedRepoPath resolves where auto-routing sends a read: the
+// routing config (readAutoRoutingConfig, the only part that touches the store),
+// then the role detection and the rule (autoRoutedRepoPath, which runs git).
 func determineAutoRoutedRepoPath(ctx context.Context, store storage.DoltStorage) (string, routing.RoutingRule) {
+	return autoRoutedRepoPath(readAutoRoutingConfig(ctx, store))
+}
+
+// determineAutoRoutedRepoPathInSession is determineAutoRoutedRepoPath for a
+// caller (bd list) that holds a read session on store: the session is passed
+// in with its end function and handed back, possibly a different one.
+//
+// The routing config is read in the session. When the decision depends on the
+// user role (cfg.UsesUserRole) the role detection runs git, about 30 ms a call,
+// and touches no store, so the session is ended first rather than holding the
+// store's lock across it. If the answer is "do not route" the caller still has
+// reads to make, so a new session is begun for them (a second engine open, paid
+// only by a workspace that configures a role-based route). If the answer is a
+// route, the session stays ended: the caller opens the target next. When the
+// role is not consulted nothing changes: the one session is returned as given.
+func determineAutoRoutedRepoPathInSession(ctx context.Context, store storage.DoltStorage, sessionCtx context.Context, endSession func()) (repoPath string, rule routing.RoutingRule, nextCtx context.Context, nextEnd func()) {
+	cfg := readAutoRoutingConfig(sessionCtx, store)
+	if !cfg.UsesUserRole() {
+		repoPath, rule = autoRoutedRepoPath(cfg)
+		return repoPath, rule, sessionCtx, endSession
+	}
+	endSession()
+	repoPath, rule = autoRoutedRepoPath(cfg)
+	if repoPath != "" && repoPath != "." {
+		return repoPath, rule, ctx, func() {}
+	}
+	nextCtx, nextEnd = storage.BeginReadSession(ctx, store)
+	return repoPath, rule, nextCtx, nextEnd
+}
+
+// readAutoRoutingConfig reads the routing.* and contributor.* keys (config.yaml
+// and env first, then the store's settings) into the resolved RoutingConfig. It
+// is the store-touching half of determineAutoRoutedRepoPath.
+func readAutoRoutingConfig(ctx context.Context, store storage.DoltStorage) *routing.RoutingConfig {
 	var dbValues map[string]string
 	// Local-only for a remote backend: see routingSettingsStore.
 	if store = routingSettingsStore(store); store != nil {
@@ -96,16 +133,20 @@ func determineAutoRoutedRepoPath(ctx context.Context, store storage.DoltStorage)
 		contributorRepo = resolveRoutingConfigValue("contributor.planning_repo", dbValues)
 	}
 
-	routingConfig := &routing.RoutingConfig{
+	return &routing.RoutingConfig{
 		Mode:             routingMode,
 		DefaultRepo:      resolveRoutingConfigValue("routing.default", dbValues),
 		MaintainerRepo:   resolveRoutingConfigValue("routing.maintainer", dbValues),
 		ContributorRepo:  contributorRepo,
 		ExplicitOverride: "",
 	}
+}
 
-	userRole := detectUserRoleForRouting(routingConfig)
-	return routing.DetermineTargetRepoWithRule(routingConfig, userRole, ".")
+// autoRoutedRepoPath applies cfg: it detects the user role when the decision
+// can depend on it (git, no store) and picks the target and the rule.
+func autoRoutedRepoPath(cfg *routing.RoutingConfig) (string, routing.RoutingRule) {
+	userRole := detectUserRoleForRouting(cfg)
+	return routing.DetermineTargetRepoWithRule(cfg, userRole, ".")
 }
 
 // routingNoticeText returns the stderr note and remediation command for the
