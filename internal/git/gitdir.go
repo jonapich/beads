@@ -388,7 +388,9 @@ func GetGitCommonDir() (string, error) {
 // top level, and no `.git` entry exists in any directory from path up to, but
 // excluding, that top level (a nested repository or a submodule). It is not
 // tied to one operating system, unlike CommonDirInProcess, because it reads
-// nothing the process has not already resolved.
+// nothing the process has not already resolved. The path is resolved with
+// resolvePath, so on Windows a junction is followed (as a symlink is on Linux)
+// and a path through one that leaves the work tree is declined.
 func CommonDirFromProcessContext(path string) (string, bool) {
 	if discoveryEnvOverridden() {
 		return "", false
@@ -401,7 +403,7 @@ func CommonDirFromProcessContext(path string) (string, bool) {
 	if err != nil {
 		return "", false
 	}
-	dir, err := filepath.EvalSymlinks(abs)
+	dir, err := resolvePath(abs)
 	if err != nil {
 		return "", false
 	}

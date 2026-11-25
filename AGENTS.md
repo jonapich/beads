@@ -145,6 +145,7 @@ docker buildx bake         # guard, then dist/windows-amd64/bd.exe
 docker buildx bake test    # the Go test suite, in a container
 docker buildx bake guard   # fails on references to the original project's infrastructure
 $env:BD_TEST_ARGS = "./internal/config/..."; docker buildx bake test   # one package
+go test ./internal/git/...                         # Windows host gate when touching internal/git (needs Go on the host; bake tests Linux only). internal/beads builds there too but is not green on Windows (POSIX-path and symlink-privilege assumptions, failing before this gate existed), so it is not in the gate
 ```
 
 - A passing run says nothing about a test that never ran, such as one skipped or

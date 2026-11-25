@@ -1,4 +1,4 @@
-//go:build linux
+//go:build linux || windows
 
 package git
 
@@ -36,7 +36,8 @@ var (
 // endings, blank and comment lines, "[section]" and `[section "sub"]`
 // headers at the start of a line (optionally followed by a comment), and
 // "key", "key = value" lines inside a section. Values containing a backslash
-// or an odd number of double quotes (escapes, continuations, unterminated
+// (escapes, continuations; on Windows only the doubled pair is understood, see
+// configDoubledBackslashes) or an odd number of double quotes (unterminated
 // strings) are not understood.
 func scanGitConfig(path string, visit func(gitConfigEntry) bool) bool {
 	data, err := os.ReadFile(path) // #nosec G304 -- a git config file Git itself would read
@@ -90,13 +91,28 @@ func scanGitConfig(path string, visit func(gitConfigEntry) bool) bool {
 // parseGitConfigValue strips a trailing comment, surrounding whitespace and
 // balanced double quotes from a value it fully understands.
 func parseGitConfigValue(raw string) (string, bool) {
-	if strings.ContainsRune(raw, '\\') || strings.Count(raw, `"`)%2 != 0 {
+	if strings.Count(raw, `"`)%2 != 0 {
+		return "", false
+	}
+	if strings.ContainsRune(raw, '\\') && !configDoubledBackslashes {
 		return "", false
 	}
 	var b strings.Builder
 	inQuote := false
-	for _, c := range raw {
+	runes := []rune(raw)
+	for i := 0; i < len(runes); i++ {
+		c := runes[i]
 		switch {
+		case c == '\\':
+			// Only reachable with configDoubledBackslashes: a `\\` pair is one
+			// backslash. Any other escape (\", \t, \n, a trailing continuation)
+			// is outside what this reader models.
+			if i+1 >= len(runes) || runes[i+1] != '\\' {
+				return "", false
+			}
+			b.WriteRune('\\')
+			i++
+			continue
 		case c == '"':
 			inQuote = !inQuote
 			continue
@@ -107,3 +123,11 @@ func parseGitConfigValue(raw string) (string, bool) {
 	}
 	return strings.TrimSpace(b.String()), true
 }
+
+// configDoubledBackslashes makes a value whose every backslash is half of a `\\`
+// pair understood. `\\` is git's own escape on every platform, and Git for Windows
+// writes paths with it (url = C:\\Users\\x), so without it nearly every repository
+// there, one with a submodule or a remote among them, would be handed to git. It is
+// enabled only on Windows, so the Linux reader stays byte-for-byte what it was (Linux
+// could adopt it in a follow-up); set by discover_windows.go.
+var configDoubledBackslashes bool
