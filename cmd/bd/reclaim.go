@@ -32,7 +32,8 @@ claim them. The previous owner's stale lease is recorded as a recovery event.
 --older-than is a grace window past lease expiry: only leases that expired at
 least this long ago are reclaimed, so a worker briefly paused (GC, clock skew)
 is not robbed of live work. Run it from a supervisor on a timer with a window
-of roughly 2× the claim TTL.
+of roughly 2× the claim TTL. When --older-than is not given, the window is 2×
+the workspace's claim TTL (the lease.ttl setting, 60m when unset).
 
 By default reclaim covers every stale lease THIS replica granted. The scope
 filters below narrow it further, using the same label surface claiming is
@@ -71,7 +72,7 @@ process's machine, not the store — so an unnamed deployment keeps the old,
 unguarded behavior instead of stranding its own work.
 
 Examples:
-  bd reclaim                       # default grace window (2× the lease TTL)
+  bd reclaim                       # default grace window (2× lease.ttl)
   bd reclaim --older-than 10m      # reclaim leases expired >10m ago
   bd reclaim --older-than 0s       # reclaim every currently-expired lease
   bd reclaim --label lane-a        # only this machine's claim partition
@@ -101,6 +102,17 @@ Examples:
 		}
 
 		CheckReadonly("reclaim")
+
+		// Without --older-than the grace window is twice the claim lease the
+		// workspace is configured for (lease.ttl, 60m when unset), so the reaper
+		// never outruns a lease that was granted for longer than the default.
+		if !cmd.Flags().Changed("older-than") {
+			ttl, err := configuredLeaseTTL(rootCtx)
+			if err != nil {
+				return HandleErrorRespectJSON("reclaim: %v", err)
+			}
+			olderThan = 2 * ttl
+		}
 
 		reclaimer, err := openLeaseReclaimer()
 		if err != nil {
@@ -264,8 +276,10 @@ func reclaimFilterFromFlags(cmd *cobra.Command) (types.ReclaimFilter, error) {
 }
 
 func init() {
+	// The registered default is the unconfigured one (2x the 60m default TTL); the
+	// run replaces it with 2x lease.ttl when the flag is not given.
 	reclaimCmd.Flags().Duration("older-than", 2*storeops.DefaultLeaseTTL,
-		"Only reclaim leases that expired at least this long ago (grace window)")
+		"Only reclaim leases that expired at least this long ago (grace window; default is 2x the lease.ttl setting, 2h0m0s when lease.ttl is unset)")
 	registerReclaimScopeFlags(reclaimCmd.Flags())
 	rootCmd.AddCommand(reclaimCmd)
 }

@@ -24,6 +24,7 @@ changes below.
 | `bd prime`'s default briefing stays under the hook output limit | [IDE setup](/getting-started/ide-setup) |
 | `bd show --field` / `--section` / `--context`, stages, typed links, kinded comments, the awaiting-user inbox, and stale-claim listing | [Agent Working Memory](/multi-agent/agent-memory) |
 | Post-close sign-off: `bd close --signoff-file`, `bd signoff`, `bd list --signoff` | [Sign-off](/workflows/signoff) |
+| Claim leases last 60 minutes by default, configurable with `bd config set lease.ttl 2h`, for claims, `bd heartbeat` and the default `bd reclaim` grace window | [Configuration](/reference/configuration#claim-lease-length) |
 | A negative `export.interval` (e.g. `-1`) auto-exports after every change, so viewers such as `bv` see edits at once | [Configuration](/reference/configuration#tool-level-settings-configyaml) |
 
 ## How these docs stay current

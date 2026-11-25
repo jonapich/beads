@@ -1002,7 +1002,10 @@ bd gate show <gate-id>
 
 Refresh the lease on an issue you currently hold in_progress.
 
-A claim carries a lease that expires after a TTL. A worker keeps its claim alive
+A claim carries a lease that expires after a TTL: 60 minutes by default, or the
+workspace's lease.ttl setting (bd config set lease.ttl 2h; a Go duration
+greater than zero). Claims and heartbeats both use it, so a heartbeat renews the
+lease for the TTL configured when it runs. A worker keeps its claim alive
 by heartbeating faster than the TTL; once it stops (because it died), the lease
 goes stale and 'bd reclaim' reverts the issue to ready so another worker can pick
 it up. Heartbeat pushes lease_expires_at forward and stamps heartbeat_at = now.
@@ -1597,7 +1600,8 @@ claim them. The previous owner's stale lease is recorded as a recovery event.
 --older-than is a grace window past lease expiry: only leases that expired at
 least this long ago are reclaimed, so a worker briefly paused (GC, clock skew)
 is not robbed of live work. Run it from a supervisor on a timer with a window
-of roughly 2× the claim TTL.
+of roughly 2× the claim TTL. When --older-than is not given, the window is 2×
+the workspace's claim TTL (the lease.ttl setting, 60m when unset).
 
 By default reclaim covers every stale lease THIS replica granted. The scope
 filters below narrow it further, using the same label surface claiming is
@@ -1636,7 +1640,7 @@ process's machine, not the store — so an unnamed deployment keeps the old,
 unguarded behavior instead of stranding its own work.
 
 Examples:
-  bd reclaim                       # default grace window (2× the lease TTL)
+  bd reclaim                       # default grace window (2× lease.ttl)
   bd reclaim --older-than 10m      # reclaim leases expired &gt;10m ago
   bd reclaim --older-than 0s       # reclaim every currently-expired lease
   bd reclaim --label lane-a        # only this machine's claim partition
@@ -1658,7 +1662,7 @@ bd reclaim [flags]
       --id strings              Only reclaim these issue IDs (repeatable)
   -l, --label strings           Only reclaim issues with ALL these labels (AND). Can combine with --label-any
       --label-any strings       Only reclaim issues with AT LEAST ONE of these labels (OR). Can combine with --label
-      --older-than duration     Only reclaim leases that expired at least this long ago (grace window) (default 10m0s)
+      --older-than duration     Only reclaim leases that expired at least this long ago (grace window; default is 2x the lease.ttl setting, 2h0m0s when lease.ttl is unset) (default 2h0m0s)
 ```
 
 ### bd reopen
@@ -3514,6 +3518,7 @@ Common namespaces:
   - custom.*          Custom integration settings
   - status.*          Issue status configuration
   - claim.*           Claim arbitration settings (pool-aware claiming)
+  - lease.ttl         Claim lease length (default: 60m)
   - doctor.suppress.* Suppress specific bd doctor warnings (GH#1095)
   - lint.*            Additional per-type lint sections (stored in config.yaml)
 
@@ -3560,6 +3565,17 @@ Claim Pools:
   that if a taker's lease expires, bd reclaim returns the issue to the
   unassigned pool, not to the pool alias it was dispatched to.
 
+Claim Lease Length:
+  A claim carries a lease that lapses unless the holder heartbeats. The
+  lease.ttl key sets its length as a Go duration (default: 60m). Claims
+  (bd update --claim, bd ready --claim, bd close --continue) and heartbeats
+  use it, and bd reclaim's default --older-than becomes twice its value.
+
+    bd config set lease.ttl 2h
+
+  A value that is not a duration greater than zero is refused. Unsetting the
+  key restores the default.
+
 Suppressing Doctor Warnings:
   Suppress specific bd doctor warnings by check name slug:
     bd config set doctor.suppress.pending-migrations true
@@ -3578,6 +3594,7 @@ Examples:
   bd config set jira.project "PROJ"
   bd config set status.custom "awaiting_review,awaiting_testing"
   bd config set claim.pools "fable-crew,night-crew"    # Pool aliases claimable by any actor
+  bd config set lease.ttl 2h                           # Claim leases last two hours without a heartbeat
   bd config set doctor.suppress.pending-migrations true
   bd config set dolt.debug true                        # Enable Dolt sql-server debug mode (loglevel=debug, --prof cpu)
   bd config set dolt.local-only true                   # Skip wiring a Dolt sync remote during bd init

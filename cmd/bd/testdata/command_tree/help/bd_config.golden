@@ -14,6 +14,7 @@ Common namespaces:
   - custom.*          Custom integration settings
   - status.*          Issue status configuration
   - claim.*           Claim arbitration settings (pool-aware claiming)
+  - lease.ttl         Claim lease length (default: 60m)
   - doctor.suppress.* Suppress specific bd doctor warnings (GH#1095)
   - lint.*            Additional per-type lint sections (stored in config.yaml)
 
@@ -60,6 +61,17 @@ Claim Pools:
   that if a taker's lease expires, bd reclaim returns the issue to the
   unassigned pool, not to the pool alias it was dispatched to.
 
+Claim Lease Length:
+  A claim carries a lease that lapses unless the holder heartbeats. The
+  lease.ttl key sets its length as a Go duration (default: 60m). Claims
+  (bd update --claim, bd ready --claim, bd close --continue) and heartbeats
+  use it, and bd reclaim's default --older-than becomes twice its value.
+
+    bd config set lease.ttl 2h
+
+  A value that is not a duration greater than zero is refused. Unsetting the
+  key restores the default.
+
 Suppressing Doctor Warnings:
   Suppress specific bd doctor warnings by check name slug:
     bd config set doctor.suppress.pending-migrations true
@@ -78,6 +90,7 @@ Examples:
   bd config set jira.project "PROJ"
   bd config set status.custom "awaiting_review,awaiting_testing"
   bd config set claim.pools "fable-crew,night-crew"    # Pool aliases claimable by any actor
+  bd config set lease.ttl 2h                           # Claim leases last two hours without a heartbeat
   bd config set doctor.suppress.pending-migrations true
   bd config set dolt.debug true                        # Enable Dolt sql-server debug mode (loglevel=debug, --prof cpu)
   bd config set dolt.local-only true                   # Skip wiring a Dolt sync remote during bd init

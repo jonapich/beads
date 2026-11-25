@@ -348,6 +348,7 @@ These are written to the Dolt database by `bd config set` and have no env var ov
 | `min_hash_length`, `max_hash_length` | Adaptive ID bounds (defaults `3` and `8`) |
 | `max_collision_prob` | Hash ID collision tolerance (default `0.25`) |
 | `claim.pools` | Comma-separated pool aliases: placeholder assignees that any actor can take with `bd update <id> --claim` (see [below](#claim-pools)). Unset by default, which turns pool claiming off |
+| `lease.ttl` | How long a claim's lease lasts without a heartbeat, as a Go duration such as `90s`, `30m` or `2h` (see [below](#claim-lease-length)). Unset means `60m` |
 | `versioned-history.enabled` | `true` records a version row for every issue write to this store; off by default. Unlike the rest of this table it also honors an environment variable, which can only turn it on (see [below](#versioned-issue-history)) |
 | `doctor.suppress.*` | Suppress specific `bd doctor` warnings by check slug (warnings only; errors always show) |
 
@@ -439,6 +440,20 @@ Claiming reads this key from the database only. A `claim.pools` value in `config
 - **`bd ready --claim`** takes only unassigned issues, so it skips pool-assigned ones even though `bd ready` lists them. Claim those by ID.
 - **Lease expiry.** If the claimer's lease expires, `bd reclaim` sets the issue back to `open` with no assignee. It does not return the issue to the pool alias, so a dispatcher that wants it back in the pool has to reassign it.
 
+### Claim Lease Length
+
+Every claim carries a lease that lapses unless its holder heartbeats (`bd heartbeat <id>`); `bd reclaim` then hands the issue back to the ready queue. The lease lasts 60 minutes by default. A worker that heartbeats rarely can leave that alone; one that heartbeats often, and wants a dead worker recovered sooner, can shorten it, and one that goes longer than an hour between heartbeats can lengthen it:
+
+```bash
+bd config set lease.ttl 2h
+```
+
+The value is a Go duration (`90s`, `30m`, `2h`) greater than zero. A value that is not is refused when you set it, with an error naming `lease.ttl`. Unsetting the key, or setting it to an empty string, restores the 60 minute default.
+
+- **Where it applies.** `bd update --claim`, `bd ready --claim` and `bd close --continue` grant the lease for this length, and `bd heartbeat` renews it for the length configured when the heartbeat runs. Leases already granted keep their expiry until the next heartbeat.
+- **Database only.** Like `claim.pools`, it is read from the workspace database, so every worker on the workspace agrees on one length. A `lease.ttl` in `config.yaml` or an environment variable has no effect.
+- **`bd reclaim`.** Without `--older-than`, the grace window is twice the configured length (`2h` when unset). An explicit `--older-than`, including `0s`, is used as given.
+- **Replicas.** In a federated deployment keep the length, and the reclaim grace window, above the interval at which replicas sync (see [Federation](/multi-agent/federation)).
 ### Versioned Issue History
 
 While `versioned-history.enabled` is on, every accepted change to an issue that participates in history (one created while it is on, or that enters the issues plane while it is on: a wisp promoted or made persistent) stores a snapshot of it as a row of `issue_versions`, in the same transaction, and `bd versions <id>` lists them. It is off by default, and it does not backfill: an issue already on the issues plane when it was turned on is legacy, and editing it records nothing (the write fence, design §16.2b). Making an issue a wisp and then persistent again while it is on (`bd update --ephemeral`, then `bd update --persistent` or `bd promote`) does not change that: a legacy issue stays legacy, and one that participates keeps its history. The issue carries its participation only while recording is on, so one made a wisp while recording was off comes back as any wisp does.

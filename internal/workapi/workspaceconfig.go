@@ -99,6 +99,15 @@ func ValidateSettingWrite(key, value string) (string, error) {
 			return "", fmt.Errorf("%w: invalid %s value: %v", issueops.ErrValidation, key, err)
 		}
 	}
+	// lease.ttl is read at every claim and heartbeat, so a value that would not
+	// parse (or would be zero or negative) must never become a row: every later
+	// claim on the workspace would refuse. An empty value stays legal, as "use
+	// the default".
+	if key == SettingKeyLeaseTTL {
+		if _, err := ParseLeaseTTLSetting(value); err != nil {
+			return "", err
+		}
+	}
 	return value, nil
 }
 

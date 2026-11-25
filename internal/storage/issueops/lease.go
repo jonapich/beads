@@ -24,8 +24,9 @@ import (
 // so a live claim's lease_expires_at always sits in the future. A worker that
 // dies stops heartbeating, its lease_expires_at goes stale, and bd reclaim
 // reverts the issue to ready. Tunable per-claim via WithLeaseTTL on the
-// context, falling back to this default.
-const DefaultLeaseTTL = 5 * time.Minute
+// context, falling back to this default; the bd CLI sets it from the lease.ttl
+// workspace setting.
+const DefaultLeaseTTL = 60 * time.Minute
 
 // leaseTTLContextKey overrides DefaultLeaseTTL for a single claim. Used by tests
 // (short TTLs) and callers that know their work cadence; unset in normal use.

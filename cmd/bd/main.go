@@ -2306,6 +2306,9 @@ var rootCmd = &cobra.Command{
 			}
 
 			syncCommandContext()
+			if err := applyLeaseTTLToRootContext(cmd); err != nil {
+				return HandleError("%v", err)
+			}
 			return nil
 		}
 
@@ -2482,6 +2485,15 @@ var rootCmd = &cobra.Command{
 
 		// Sync all state to CommandContext for unified access.
 		syncCommandContext()
+
+		// A command that grants or renews a claim lease carries lease.ttl on
+		// the root context, which is where every claim and heartbeat reads it.
+		// This is after the sync on purpose: the settings read goes through
+		// getStore(), which answers from the CommandContext, and before the sync
+		// it would find no store and open a second, undecorated one.
+		if err := applyLeaseTTLToRootContext(cmd); err != nil {
+			return HandleError("%v", err)
+		}
 
 		// Tips (including sync conflict proactive checks) are shown via maybeShowTip()
 		// after successful command execution, not in PreRun

@@ -17,7 +17,10 @@ var heartbeatCmd = &cobra.Command{
 	Short:   "Refresh the lease on an issue you hold in_progress",
 	Long: `Refresh the lease on an issue you currently hold in_progress.
 
-A claim carries a lease that expires after a TTL. A worker keeps its claim alive
+A claim carries a lease that expires after a TTL: 60 minutes by default, or the
+workspace's lease.ttl setting (bd config set lease.ttl 2h; a Go duration
+greater than zero). Claims and heartbeats both use it, so a heartbeat renews the
+lease for the TTL configured when it runs. A worker keeps its claim alive
 by heartbeating faster than the TTL; once it stops (because it died), the lease
 goes stale and 'bd reclaim' reverts the issue to ready so another worker can pick
 it up. Heartbeat pushes lease_expires_at forward and stamps heartbeat_at = now.
