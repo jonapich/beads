@@ -119,26 +119,38 @@ func claimMetadataEdits(session string, now time.Time) []string {
 // known session, into extra --set-metadata pairs. Both routes of bd update
 // append them to the user's own pairs, so they land in the same patch.
 func agentUpdateMetadataEdits(cmd *cobra.Command) ([]string, error) {
-	var edits []string
+	stage, claim, err := agentUpdateMetadataEditsSplit(cmd)
+	if err != nil {
+		return nil, err
+	}
+	return append(stage, claim...), nil
+}
+
+// agentUpdateMetadataEditsSplit is agentUpdateMetadataEdits with the two kinds
+// of edit kept apart: the stage edits (--stage), and the claim attribution
+// (claim.session and claim.at, written beside a --claim when a session id is
+// known). The claim pair is attribution only, so a caller that must can drop it
+// and still make the claim (see updateWithoutClaimAttribution).
+func agentUpdateMetadataEditsSplit(cmd *cobra.Command) (stage, claim []string, err error) {
 	now := time.Now()
 	if cmd.Flags().Changed("stage") {
-		stage, _ := cmd.Flags().GetString("stage")
-		stage = strings.TrimSpace(stage)
-		if err := validateStage(stage); err != nil {
-			return nil, err
+		s, _ := cmd.Flags().GetString("stage")
+		s = strings.TrimSpace(s)
+		if err := validateStage(s); err != nil {
+			return nil, nil, err
 		}
-		edits = append(edits, stageMetadataEdits(stage, now)...)
+		stage = stageMetadataEdits(s, now)
 	}
-	if claim, _ := cmd.Flags().GetBool("claim"); claim {
+	if isClaim, _ := cmd.Flags().GetBool("claim"); isClaim {
 		session, _ := cmd.Flags().GetString("session")
 		if session == "" {
 			session = os.Getenv("CLAUDE_SESSION_ID")
 		}
 		if session = strings.TrimSpace(session); session != "" {
-			edits = append(edits, claimMetadataEdits(session, now)...)
+			claim = claimMetadataEdits(session, now)
 		}
 	}
-	return edits, nil
+	return stage, claim, nil
 }
 
 // metadataMap decodes issue metadata into raw top-level values. A missing or

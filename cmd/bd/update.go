@@ -6,12 +6,15 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"reflect"
+	"slices"
 	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/steveyegge/beads/internal/audit"
 	"github.com/steveyegge/beads/internal/debug"
+	"github.com/steveyegge/beads/internal/httpclient/wire"
 	"github.com/steveyegge/beads/internal/metrics"
 	"github.com/steveyegge/beads/internal/remedy"
 	"github.com/steveyegge/beads/internal/storage"
@@ -393,11 +396,12 @@ pointless).`,
 		if (len(setMetadataFlags) > 0 || len(unsetMetadataFlags) > 0) && cmd.Flags().Changed("metadata") {
 			return HandleErrorRespectJSON("cannot combine --metadata with --set-metadata or --unset-metadata")
 		}
-		agentEdits, err := agentUpdateMetadataEdits(cmd)
+		stageEdits, claimAttribution, err := agentUpdateMetadataEditsSplit(cmd)
 		if err != nil {
 			return HandleErrorRespectJSON("%v", err)
 		}
-		setMetadataFlags = append(setMetadataFlags, agentEdits...)
+		setMetadataFlags = append(setMetadataFlags, stageEdits...)
+		setMetadataFlags = append(setMetadataFlags, claimAttribution...)
 		if len(setMetadataFlags) > 0 {
 			updates[storageissueops.OpSetMetadata] = setMetadataFlags
 		}
@@ -583,7 +587,7 @@ pointless).`,
 			// which is why it is conditioned here rather than passed straight
 			// through: `--force -s closed` is now a legitimate way to ask for
 			// the close-policy half alone.
-			updateResult, updateErr := runCommandUpdateMutation(opsCtx, ops, commandUpdateMutation{
+			mutation := commandUpdateMutation{
 				actor:            currentActor(),
 				issueID:          result.ResolvedID,
 				patch:            patch,
@@ -592,7 +596,19 @@ pointless).`,
 				expectedAssignee: ifAssignee,
 				expectedStatus:   expectedStatus,
 				expectedVersion:  ifRevision,
-			})
+			}
+			updateResult, updateErr := runCommandUpdateMutation(opsCtx, ops, mutation)
+			// A server that predates issues.update.claim can make a claim ALONE (its
+			// claimIssue) but refuses a claim that carries a patch. When nothing else was
+			// asked for, the session attribution is the only patch there is, so the claim
+			// is made without it and the omission is said out loud.
+			if updateErr != nil && claimFlag && len(claimAttribution) > 0 && isMissingUpdateClaimCapability(updateErr) {
+				if bare, ok := updateWithoutClaimAttribution(updates, claimAttribution, basePatch, patch); ok {
+					fmt.Fprintf(os.Stderr, "%s claimed without recording claim.session/claim.at: this server does not advertise %s (upgrade bd serve to record them)\n", ui.RenderWarn("!"), wire.CapIssuesUpdateClaim)
+					mutation.patch = bare
+					updateResult, updateErr = runCommandUpdateMutation(opsCtx, ops, mutation)
+				}
+			}
 			if updateErr != nil {
 				// A8 (beads#4682): an active --if-revision guard reports
 				// through gascity's dedicated conditional-write envelope
@@ -1165,4 +1181,45 @@ func templateReadOnlyRefusal(id string, err error) (error, bool) {
 		return nil, false
 	}
 	return &issueops.TemplateReadOnlyError{IssueID: id}, true
+}
+
+// isMissingUpdateClaimCapability reports a refusal because the server does not
+// advertise issues.update.claim (an older bd serve): the typed capability error
+// the http backend returns before any dial.
+func isMissingUpdateClaimCapability(err error) bool {
+	var unsup *storage.ErrUnsupported
+	return errors.As(err, &unsup) && unsup.Capability == wire.CapIssuesUpdateClaim
+}
+
+// updateWithoutClaimAttribution is the claim's patch with the claim.session and
+// claim.at edits taken out. It answers ok only when what is left is a claim alone
+// (an empty patch, and the per-issue patch was not altered from the base): a claim
+// that also edits fields stays refused, because dropping attribution is a
+// concession, dropping the user's edits would not be.
+func updateWithoutClaimAttribution(updates map[string]interface{}, attribution []string, basePatch, patch issueops.IssuePatch) (issueops.IssuePatch, bool) {
+	if !reflect.DeepEqual(patch, basePatch) {
+		return issueops.IssuePatch{}, false
+	}
+	trimmed := make(map[string]interface{}, len(updates))
+	for k, v := range updates {
+		trimmed[k] = v
+	}
+	if set, ok := trimmed[storageissueops.OpSetMetadata].([]string); ok {
+		kept := make([]string, 0, len(set))
+		for _, edit := range set {
+			if !slices.Contains(attribution, edit) {
+				kept = append(kept, edit)
+			}
+		}
+		if len(kept) == 0 {
+			delete(trimmed, storageissueops.OpSetMetadata)
+		} else {
+			trimmed[storageissueops.OpSetMetadata] = kept
+		}
+	}
+	bare, err := buildUpdatePatch(trimmed)
+	if err != nil || !reflect.DeepEqual(bare, issueops.IssuePatch{}) {
+		return issueops.IssuePatch{}, false
+	}
+	return bare, true
 }

@@ -588,11 +588,13 @@ shapes:
     args: [update, e2e-t-claim, --claim, --json]
     compare: exit
     verify: [[show, --json, e2e-t-claim]]
+    pending: {slice: "SRV-1", reason: "the reference server lacks UpdateIssueRequest.claim, so the claim goes through claimIssue and cannot carry the claim.session/claim.at metadata bd update --claim writes under CLAUDE_SESSION_ID (this corpus sets one): the CLI says so on stderr and claims without them, so the verify show differs in metadata only; remove the mark when reference_server.json is upgraded"}
   - id: gc-update-claim-actor
     source: gc cmd_agent_script.go bd_claim (update <id> --claim --actor X)
     args: [update, e2e-t-claim2, --claim, --actor, alice]
     compare: exit
     verify: [[show, --json, e2e-t-claim2]]
+    pending: {slice: "SRV-1", reason: "the reference server lacks UpdateIssueRequest.claim, so the claim goes through claimIssue and cannot carry the claim.session/claim.at metadata bd update --claim writes under CLAUDE_SESSION_ID (this corpus sets one): the CLI says so on stderr and claims without them, so the verify show differs in metadata only; remove the mark when reference_server.json is upgraded"}
   - id: gc-update-claim-wisp
     source: gc ready queues include ephemeral work; claiming a wisp
     args: [update, e2e-wisp-c, --claim, --json]

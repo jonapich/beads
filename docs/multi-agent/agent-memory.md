@@ -143,7 +143,7 @@ link sort first, because they are ready to judge.
 
 `bd update --claim` takes a lease that `bd heartbeat` keeps alive. When a
 session is known (`--session` or `CLAUDE_SESSION_ID`), the claim also records
-`claim.session` and `claim.at` in metadata.
+`claim.session` and `claim.at` in metadata. Against a `bd serve` that does not advertise `issues.update.claim` (an older server) the claim is still made, without those two keys, and a one-line notice on stderr says so.
 
 ```bash
 bd list --stale-claims 30m     # lease expired over 30m ago, or no lease and quiet for 30m
