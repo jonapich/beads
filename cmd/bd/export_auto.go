@@ -85,6 +85,10 @@ type exportAutoState struct {
 const exportAutoStateFile = "export-state.json"
 const gitAddTimeout = 5 * time.Second
 
+// autoExportGitAdd stages the exported file. A variable so a test can see when,
+// relative to the read session, the export reaches it.
+var autoExportGitAdd = gitAddFile
+
 // maybeAutoExport writes a git-tracked JSONL file if enabled and due.
 // Called from PersistentPostRun after auto-backup.
 //
@@ -109,31 +113,25 @@ func maybeAutoExport(ctx context.Context, allowEmptyOverwrite bool) error {
 		return nil
 	}
 
-	// Everything below reads the store: the change check, the guards, the
-	// export itself. An embedded store opens an engine for each read, about
-	// eighteen of them for one export, so they share one read session. The body
-	// must pass the context it is given to every store call; a write inside it
-	// fails (and is reported as an export failure like any other).
-	ran := false
-	var result error
-	sessionErr := storage.WithReadSession(ctx, store, func(ctx context.Context) error {
-		ran = true
-		result = runAutoExport(ctx, allowEmptyOverwrite)
-		return nil
-	})
-	if !ran {
-		fmt.Fprintf(os.Stderr, "Warning: auto-export skipped: failed to open the store: %v\n", sessionErr)
-		return nil
-	}
-	if sessionErr != nil {
-		// The export already ran; only closing the session's engine failed.
-		debug.Logf("auto-export: closing the read session: %v\n", sessionErr)
-	}
-	return result
+	// The change check, the guards and the export itself read the store. An
+	// embedded store opens an engine for each read, about eighteen of them for one
+	// export, so they share one read session (and hold the store's lock while they
+	// run, which every other bd waits on). runAutoExport ends the session as soon
+	// as its last read is done, so the work after it (the git add, the state file,
+	// the warnings) never holds the lock; the deferred end covers every earlier
+	// return. The reads must pass the context they are given to every store call;
+	// a write inside them fails (and is reported as an export failure like any
+	// other). A session that cannot be opened is not a failure here: the reads
+	// that follow open their own engines and report what is wrong themselves.
+	sessionCtx, endSession := storage.BeginReadSession(ctx, store)
+	defer endSession()
+	return runAutoExport(sessionCtx, allowEmptyOverwrite, endSession)
 }
 
-// runAutoExport is maybeAutoExport's body, run inside a read session.
-func runAutoExport(ctx context.Context, allowEmptyOverwrite bool) error {
+// runAutoExport is maybeAutoExport's body. ctx carries the read session, which
+// endSession closes: it is called once the last store read is done, before the
+// warnings, the git add and the state save, none of which touch the store.
+func runAutoExport(ctx context.Context, allowEmptyOverwrite bool, endSession func()) error {
 	beadsDir := beads.FindBeadsDir()
 	if beadsDir == "" {
 		return nil
@@ -246,6 +244,10 @@ func runAutoExport(ctx context.Context, allowEmptyOverwrite bool) error {
 		dirtyIDs = nil
 	}
 
+	// Every store read is done. Release the lock before the work that remains,
+	// which touches files, git and stderr only.
+	endSession()
+
 	// Never heal silently. The user asked for a delete and is getting a line
 	// removed from a git-tracked file; say so, and name what went.
 	if len(provenDeleted) > 0 {
@@ -294,7 +296,7 @@ func runAutoExport(ctx context.Context, allowEmptyOverwrite bool) error {
 	// Optional git add — skip when no-git-ops is set (GH#3314), when not in a
 	// git repo (standalone BEADS_DIR flow), or when export.git-add is false.
 	if config.GetBool("export.git-add") && !config.GetBool("no-git-ops") && isGitRepo() {
-		if err := gitAddFile(fullPath); err != nil {
+		if err := autoExportGitAdd(fullPath); err != nil {
 			return fmt.Errorf("auto-export: git add failed: %w", err)
 		}
 	}

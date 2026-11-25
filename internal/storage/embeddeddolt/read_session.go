@@ -128,17 +128,40 @@ func (s *EmbeddedDoltStore) openEngine(ctx context.Context) (*sql.DB, func() err
 	if s.sessionsOpen.Load() == 0 {
 		return openSQL(ctx, s.dataDir, s.database, s.branch)
 	}
-	bctx, cancel := context.WithTimeout(ctx, sessionBypassWait)
+	// The time limit applies to the WAIT for the engine, not to the engine. A
+	// context with a deadline would stay attached to what it opened, and the
+	// engine may keep the context it was opened with, so a call that got its
+	// engine after a short wait and then ran past the limit (a throttled
+	// machine, a big read) would have it cancelled under it. So the engine gets a
+	// plain cancelable context, and a timer cancels it only if the open has not
+	// finished by the deadline. Whoever settles first (the open or the timer)
+	// decides, so a timer firing just after a successful open does nothing.
+	bctx, cancel := context.WithCancel(ctx)
+	var settled atomic.Bool
+	timer := time.AfterFunc(sessionBypassWait, func() {
+		if settled.CompareAndSwap(false, true) {
+			cancel()
+		}
+	})
 	db, cleanup, err := openSQL(bctx, s.dataDir, s.database, s.branch)
+	if !settled.CompareAndSwap(false, true) {
+		// The wait ran out first: the context the open ran under is cancelled.
+		// Whatever it returned is not an engine to keep.
+		if err == nil {
+			_ = cleanup()
+		}
+		cancel()
+		if ctx.Err() != nil {
+			return nil, nil, ctx.Err()
+		}
+		return nil, nil, errSessionBypass
+	}
+	timer.Stop()
 	if err != nil {
 		cancel()
-		if ctx.Err() == nil && errors.Is(bctx.Err(), context.DeadlineExceeded) {
-			return nil, nil, errSessionBypass
-		}
 		return nil, nil, err
 	}
-	// The engine may keep the context it was opened with, so it stays alive
-	// until the caller is done with the engine.
+	// The context stays alive until the caller is done with the engine.
 	return db, func() error {
 		defer cancel()
 		return cleanup()
