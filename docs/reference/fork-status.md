@@ -27,7 +27,7 @@ changes below.
 | Claim leases last 60 minutes by default, configurable with `bd config set lease.ttl 2h`, for claims, `bd heartbeat` and the default `bd reclaim` grace window | [Configuration](/reference/configuration#claim-lease-length) |
 | `bd prime` tells agents to sign their comments with `--author`, and `BEADS_COMMENT_AUTHOR` sets that author once per agent | [Configuration](/reference/configuration#comment-author) |
 | A negative `export.interval` (e.g. `-1`) auto-exports after every change, so viewers such as `bv` see edits at once | [Configuration](/reference/configuration#tool-level-settings-configyaml) |
-| Fewer embedded Dolt engine opens per command: the detail and list reads behind `bd show --json` and `bd list`, and auto-export, each share one open (the ID lookup before `show` and the config reads before `list` still open their own, tracked in beads-c2o.71), a second `bd` waiting on the lock retries after 50 ms instead of 500 ms, and auto-backup runs after write commands only, not after reads | [Configuration](/reference/configuration#auto-backup) |
+| Fewer embedded Dolt engine opens per command: the reads behind `bd show --json` (ID lookup and detail), `bd list` (config, routing check and page) and auto-export each share one open, a second `bd` waiting on the lock retries after 50 ms instead of 500 ms, and auto-backup runs after write commands only, not after reads | [Configuration](/reference/configuration#auto-backup) |
 
 ## How these docs stay current
 

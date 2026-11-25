@@ -108,7 +108,16 @@ func resolveAndGetIssueWithRoutingAccess(ctx context.Context, localStore storage
 	if err == nil {
 		return result, nil
 	}
+	return resolveRoutedAfterLocalMiss(ctx, localStore, id, err, writable)
+}
 
+// resolveRoutedAfterLocalMiss is what resolveAndGetIssueWithRoutingAccess does
+// once the local store has answered err for id: it tries the routed tiers and
+// otherwise returns err. It is its own function so a caller that holds a read
+// session on localStore (bd show) can end it before this runs: the routed tiers
+// OPEN other stores, and one of them may be the same data directory, whose open
+// would wait on the lock the session holds.
+func resolveRoutedAfterLocalMiss(ctx context.Context, localStore storage.DoltStorage, id string, err error, writable bool) (*RoutedResult, error) {
 	// The first routed tier that refuses the id answers instead of the local
 	// not-found (isRoutedResolutionRefusal). The refusal is checked before
 	// isRoutingFailure, which it would also satisfy, so the auto tier still

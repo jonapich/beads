@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/steveyegge/beads/internal/metrics"
 	"github.com/steveyegge/beads/internal/remedy"
+	"github.com/steveyegge/beads/internal/storage"
 	"github.com/steveyegge/beads/internal/types"
 	"github.com/steveyegge/beads/internal/ui"
 	"github.com/steveyegge/beads/internal/uimd"
@@ -140,8 +141,25 @@ var showCmd = &cobra.Command{
 		allDetails := []interface{}{}
 		foundCount := 0
 		for idx, id := range args {
-			// Resolve and get issue with routing (e.g., gt-xyz routes to another rig)
-			result, err := resolveAndGetIssueWithRouting(ctx, store, id)
+			// Resolve and get issue with routing (e.g., gt-xyz routes to another rig).
+			// The id lookup and, under --json, the detail read are one engine open
+			// instead of one each: they share a read session that is ended below on
+			// every path, as soon as the last of those reads is done, so the text
+			// rendering and its own reads never hold the store's lock.
+			//
+			// EVERY exit from this iteration before the --json Get below must call
+			// endSession first. One that does not leaves the lock held: this
+			// iteration's later reads and the next iteration's session then wait on
+			// it (30 s, then an error) instead of failing at the line that forgot.
+			sessionCtx, endSession := storage.BeginReadSession(ctx, store)
+			result, err := resolveAndGetFromStore(sessionCtx, store, id, false)
+			if err != nil {
+				// The routed tiers open OTHER stores, and one of them can be this same
+				// data directory, whose open would wait on the lock the session holds.
+				// So the session ends before they run; the local miss is all it served.
+				endSession()
+				result, err = resolveRoutedAfterLocalMiss(ctx, store, id, err, false)
+			}
 			if err != nil {
 				if result != nil {
 					result.Close()
@@ -155,12 +173,17 @@ var showCmd = &cobra.Command{
 				continue
 			}
 			if result == nil || result.Issue == nil {
+				endSession()
 				if result != nil {
 					result.Close()
 				}
 				fmt.Fprintf(os.Stderr, "Issue %s not found\n", id)
 				fmt.Fprintf(os.Stderr, "Hint: %s\n", showNotFoundHint(id))
 				continue
+			}
+			if shortMode || !jsonOutput {
+				// Nothing below reads through the session.
+				endSession()
 			}
 			issue := result.Issue
 			issueStore := result.Store // Use the store that contains this issue
@@ -189,10 +212,12 @@ var showCmd = &cobra.Command{
 				// unattended HTTP client also calls.
 				rd, rerr := issueStore.IssueReader()
 				if rerr != nil {
+					endSession()
 					result.Close()
 					return HandleErrorRespectJSON("%v", rerr)
 				}
-				details, derr := rd.Get(ctx, showGetRequest(issue.ID, includeDepends, includeComments, briefDeps))
+				details, derr := rd.Get(sessionCtx, showGetRequest(issue.ID, includeDepends, includeComments, briefDeps))
+				endSession()
 				if derr != nil {
 					result.Close()
 					return HandleErrorRespectJSON("%v", derr)

@@ -194,7 +194,20 @@ func openAutoRoutedStore(ctx context.Context, store storage.DoltStorage, writabl
 	if repoPath == "" || repoPath == "." {
 		return nil, false, routing.RuleNone, nil
 	}
+	targetStore, err := openAutoRoutedTarget(ctx, repoPath, rule, writable)
+	if err != nil {
+		return nil, false, rule, err
+	}
+	return targetStore, true, rule, nil
+}
 
+// openAutoRoutedTarget opens the store the auto-routing rule chose, repoPath
+// being the repository determineAutoRoutedRepoPath returned (neither empty nor
+// "."). It is the second half of openAutoRoutedStore, split out so a caller
+// that holds a read session on the local store (bd list) can end it before this
+// opens another store: the target may be the same data directory, whose open
+// would wait on the lock the session holds.
+func openAutoRoutedTarget(ctx context.Context, repoPath string, rule routing.RoutingRule, writable bool) (storage.DoltStorage, error) {
 	targetRepoPath := routing.ExpandPath(repoPath)
 	targetBeadsDir := filepath.Join(targetRepoPath, ".beads")
 	// Refuse what admission refuses from the target's own contents first, as
@@ -202,15 +215,15 @@ func openAutoRoutedStore(ctx context.Context, store storage.DoltStorage, writabl
 	// report a historical SQLite or legacy Dolt target as a missing
 	// dolt_database field.
 	if _, err := admitForeignWorkspace(targetBeadsDir); err != nil {
-		return nil, false, rule, fmt.Errorf("failed to open routed store at %s: %w", remedy.PrintedValue(targetRepoPath), err)
+		return nil, fmt.Errorf("failed to open routed store at %s: %w", remedy.PrintedValue(targetRepoPath), err)
 	}
 	database, err := autoRouteTargetDatabase(targetBeadsDir, writable)
 	if err != nil {
-		return nil, false, rule, fmt.Errorf("failed to open routed store at %s: target has no dolt_database configured: %w", remedy.PrintedValue(targetRepoPath), err)
+		return nil, fmt.Errorf("failed to open routed store at %s: target has no dolt_database configured: %w", remedy.PrintedValue(targetRepoPath), err)
 	}
 	targetStore, err := openRoutedTargetStore(ctx, targetBeadsDir, database, writable)
 	if err != nil {
-		return nil, false, rule, fmt.Errorf("failed to open routed store at %s: %w", remedy.PrintedValue(targetRepoPath), err)
+		return nil, fmt.Errorf("failed to open routed store at %s: %w", remedy.PrintedValue(targetRepoPath), err)
 	}
-	return wireExternalDependencyPolicy(targetStore), true, rule, nil
+	return wireExternalDependencyPolicy(targetStore), nil
 }

@@ -6,12 +6,27 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/steveyegge/beads/internal/storage"
 )
 
-var _ storage.ReadSessioner = (*EmbeddedDoltStore)(nil)
+var (
+	_ storage.ReadSessioner       = (*EmbeddedDoltStore)(nil)
+	_ storage.ReadSessionBeginner = (*EmbeddedDoltStore)(nil)
+)
+
+// engineOpens counts the engines opened for store calls and read sessions.
+var engineOpens atomic.Uint64
+
+// EngineOpens reports how many embedded engines this process has tried to open
+// to serve store calls and read sessions (a failed attempt counts). It does not
+// count the open-time opens a store makes in Open and OpenReadOnly, which do not
+// go through openEngine. It is a diagnostic: a test reads it before and after a
+// command path to pin how many opens that path makes.
+func EngineOpens() uint64 { return engineOpens.Load() }
 
 // openSQL is OpenSQL behind a variable so tests can count engine opens.
 var openSQL = OpenSQL
@@ -34,46 +49,73 @@ type readSessionKey struct{ owner *EmbeddedDoltStore }
 // readSession is one engine open shared by the reads made under its context.
 type readSession struct {
 	db *sql.DB
+	// ended is set when the session's engine has been closed. A context that
+	// outlives the session then no longer resolves to it (sessionFrom), so a late
+	// call opens its own engine instead of using a closed handle.
+	ended atomic.Bool
 }
 
 func (s *EmbeddedDoltStore) sessionFrom(ctx context.Context) *readSession {
 	rs, _ := ctx.Value(readSessionKey{owner: s}).(*readSession)
+	if rs == nil || rs.ended.Load() {
+		return nil
+	}
 	return rs
 }
 
-// WithReadSession implements storage.ReadSessioner: it opens the engine once and
-// runs fn with a context that makes every read of this store reuse it. See
-// storage.ReadSessioner for the contract.
+// BeginReadSession implements storage.ReadSessionBeginner: it opens the engine
+// once and returns a context that makes every read of this store reuse it, with
+// the function that closes it. A context that already carries a session of this
+// store is returned as it is with a no-op end: the outer session owns the
+// engine. See storage.ReadSessioner for the contract.
 //
 // The pool is pinned to one connection. database/sql then serializes the
 // transactions of any goroutines sharing the session, and the USE/SET OpenSQL
 // ran stays on the only connection there is (the invariant version_control.go
 // documents for withPinnedDBConn).
-func (s *EmbeddedDoltStore) WithReadSession(ctx context.Context, fn func(ctx context.Context) error) (err error) {
+func (s *EmbeddedDoltStore) BeginReadSession(ctx context.Context) (context.Context, func() error, error) {
 	if s.closed.Load() {
-		return errClosed
+		return ctx, nil, errClosed
 	}
 	if s.sessionFrom(ctx) != nil {
-		return fn(ctx)
+		return ctx, func() error { return nil }, nil
 	}
 
 	db, cleanup, err := s.openEngine(ctx)
 	if err != nil {
-		return err
+		return ctx, nil, err
 	}
 	db.SetMaxOpenConns(1)
 	db.SetMaxIdleConns(1)
 
+	rs := &readSession{db: db}
 	s.sessionsOpen.Add(1)
+	var once sync.Once
+	end := func() (err error) {
+		once.Do(func() {
+			rs.ended.Store(true)
+			s.sessionsOpen.Add(-1)
+			err = cleanup()
+		})
+		return err
+	}
+	return context.WithValue(ctx, readSessionKey{owner: s}, rs), end, nil
+}
+
+// WithReadSession implements storage.ReadSessioner: BeginReadSession around fn.
+func (s *EmbeddedDoltStore) WithReadSession(ctx context.Context, fn func(ctx context.Context) error) (err error) {
+	sctx, end, err := s.BeginReadSession(ctx)
+	if err != nil {
+		return err
+	}
 	defer func() {
-		s.sessionsOpen.Add(-1)
 		// Joined only when the close failed: errors.Join would wrap even a
 		// lone fn error, and callers compare what fn returned.
-		if cerr := cleanup(); cerr != nil {
+		if cerr := end(); cerr != nil {
 			err = errors.Join(err, cerr)
 		}
 	}()
-	return fn(context.WithValue(ctx, readSessionKey{owner: s}, &readSession{db: db}))
+	return fn(sctx)
 }
 
 // openEngine opens the engine for one store call. While a read session of this
@@ -82,6 +124,7 @@ func (s *EmbeddedDoltStore) WithReadSession(ctx context.Context, fn func(ctx con
 // short (a session lasts well under a second), but a call that lost its context
 // would sit there for good, so the wait is bounded and the error names the cause.
 func (s *EmbeddedDoltStore) openEngine(ctx context.Context) (*sql.DB, func() error, error) {
+	engineOpens.Add(1)
 	if s.sessionsOpen.Load() == 0 {
 		return openSQL(ctx, s.dataDir, s.database, s.branch)
 	}

@@ -224,7 +224,17 @@ func runListCore(cmd *cobra.Command, _ []string) error {
 	// a copy of it at every level, neither of which a page can express. Building it
 	// unconditionally also keeps the page query ahead of the tree branch, so
 	// `--parent --pretty --max-rows N` still refuses on the cap where it did.
-	cfg, err := workapi.LoadStoreListConfig(rootCtx, store)
+	ctx := rootCtx
+
+	// The config load, the routing check and the page are all reads of the local
+	// store: they share one engine open (a read session) instead of one each. It
+	// is ended as soon as the page is read, and before a watch loop, so rendering
+	// and the reads after the page never hold the store's lock. Every store call
+	// until then takes sessionCtx.
+	sessionCtx, endSession := storage.BeginReadSession(ctx, store)
+	defer endSession()
+
+	cfg, err := workapi.LoadStoreListConfig(sessionCtx, store)
 	if err != nil {
 		return HandleError("%v", err)
 	}
@@ -233,20 +243,24 @@ func runListCore(cmd *cobra.Command, _ []string) error {
 		return HandleError("%v", err)
 	}
 
-	ctx := rootCtx
-
 	activeStore := store
-	routedStore, routed, routingRule, err := openRoutedReadStore(ctx, activeStore)
-	if err != nil {
-		return HandleError("%v", err)
-	}
-	if routed {
+	// openRoutedReadStore, in two steps so the session can end between them: the
+	// routing check reads the local store (in the session), but opening the target
+	// opens another store, which may be this same data directory and would then
+	// wait for ever on the lock the session holds.
+	if repoPath, rule := determineAutoRoutedRepoPath(sessionCtx, store); repoPath != "" && repoPath != "." {
+		endSession()
+		routedStore, err := openAutoRoutedTarget(ctx, repoPath, rule, false)
+		if err != nil {
+			return HandleError("%v", err)
+		}
 		defer func() { _ = routedStore.Close() }()
-		printContributorRoutingNotice(ctx, activeStore, routingRule)
+		printContributorRoutingNotice(ctx, activeStore, rule)
 		activeStore = routedStore
 	}
 
 	if in.watchMode {
+		endSession() // a watch polls for as long as the user lets it
 		if err := watchIssues(ctx, activeStore, filter, in.ReadyFlag, in.ParentID, in.SortBy, in.Reverse, in.effectiveLimit, in.Status); err != nil {
 			if capErr := handleMaxRowsError(err); capErr != nil {
 				return capErr
@@ -270,7 +284,8 @@ func runListCore(cmd *cobra.Command, _ []string) error {
 	// its has-more verdict are unchanged bytes. The cap still arrives as
 	// *ErrTooManyRows, which is why handleMaxRowsError still wraps the call.
 	if jsonOutput {
-		page, err := reader.List(ctx, in.ListRequest)
+		page, err := reader.List(sessionCtx, in.ListRequest)
+		endSession()
 		if err != nil {
 			if capErr := handleMaxRowsError(err); capErr != nil {
 				return capErr
@@ -301,7 +316,8 @@ func runListCore(cmd *cobra.Command, _ []string) error {
 	// not merely unused here, they are unpayable: SkipCounts above already
 	// zeroes the count this hydration would key on.
 	textRequest.IncludeComments = false
-	page, err := reader.List(ctx, textRequest)
+	page, err := reader.List(sessionCtx, textRequest)
+	endSession()
 	if err != nil {
 		if capErr := handleMaxRowsError(err); capErr != nil {
 			return capErr
