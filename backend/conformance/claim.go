@@ -154,6 +154,15 @@ func testHeartbeatWisp(t *testing.T, f Factory) {
 	}
 }
 
+// pastLeaseHorizon is the olderThan the reclaim cases hand ReclaimExpiredLeases
+// so a lease granted a moment ago already counts as expired: the cutoff
+// (now - olderThan) lands twice the default lease TTL in the future, a full TTL
+// past the lease's expiry. It is derived from the default TTL rather than a
+// literal hour because a literal equal to the TTL leaves the cutoff on the
+// lease's own expiry, which a store that keeps whole seconds does not call
+// stale (the default went from 5m to 60m and a -1h cutoff stopped clearing it).
+const pastLeaseHorizon = -2 * issueops.DefaultLeaseTTL
+
 // testReclaimExpiredLease: a claim whose lease has expired is reverted to open and
 // unassigned, reported with its previous owner, and its lease/started_at cleared.
 func testReclaimExpiredLease(t *testing.T, f Factory) {
@@ -165,7 +174,7 @@ func testReclaimExpiredLease(t *testing.T, f Factory) {
 	// cutoff (now - olderThan) into the future, so even the fresh lease counts as
 	// expired. This exercises the revert path deterministically with no wall-clock
 	// wait; ReclaimSkipsFreshLease (olderThan 0) pins the other side of the cutoff.
-	reclaimed, err := s.ReclaimExpiredLeases(ctx(), -time.Hour, types.ReclaimFilter{}, "reaper")
+	reclaimed, err := s.ReclaimExpiredLeases(ctx(), pastLeaseHorizon, types.ReclaimFilter{}, "reaper")
 	must(t, err)
 	found := false
 	for _, r := range reclaimed {
