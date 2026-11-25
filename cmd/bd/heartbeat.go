@@ -82,6 +82,12 @@ Examples:
 		defer result.Close()
 
 		issueStore := result.Store
+		if result.Routed {
+			// The lease is the length of the workspace that holds the issue.
+			if ctx, err = leaseTTLContextForStore(ctx, issueStore); err != nil {
+				return HandleErrorRespectJSON("heartbeat %s: %v", result.ResolvedID, err)
+			}
+		}
 		heartbeater, err := issueStore.Heartbeater()
 		if err != nil {
 			return HandleErrorRespectJSON("heartbeat %s: %v", result.ResolvedID, err)

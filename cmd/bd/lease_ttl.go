@@ -6,9 +6,9 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/steveyegge/beads/internal/storage"
 	storeops "github.com/steveyegge/beads/internal/storage/issueops"
 	"github.com/steveyegge/beads/internal/workapi"
-	"github.com/steveyegge/beads/issueops"
 )
 
 // configuredLeaseTTL resolves the workspace's claim lease length: the
@@ -25,18 +25,7 @@ func configuredLeaseTTL(ctx context.Context) (time.Duration, error) {
 	if err != nil {
 		return 0, err
 	}
-	got, err := settings.GetSetting(ctx, issueops.GetSettingRequest{Key: workapi.SettingKeyLeaseTTL})
-	if err != nil {
-		return 0, err
-	}
-	ttl, err := workapi.ParseLeaseTTLSetting(got.Value)
-	if err != nil {
-		return 0, err
-	}
-	if ttl == 0 {
-		return storeops.DefaultLeaseTTL, nil
-	}
-	return ttl, nil
+	return workapi.ResolveLeaseTTL(ctx, settings, storeops.DefaultLeaseTTL)
 }
 
 // commandGrantsLease reports whether this invocation grants or renews a claim
@@ -69,8 +58,12 @@ func commandGrantsLease(cmd *cobra.Command) bool {
 // It must run after syncCommandContext: the settings read finds the store
 // through the CommandContext, and before that sync it would find none and
 // open a second, undecorated store that the command then writes through.
+//
+// A store whose claims and heartbeats run in another process (the HTTP backend)
+// is skipped: bd serve grants those leases itself, from the workspace's lease.ttl,
+// and never sees this context, so the read would cost a request for nothing.
 func applyLeaseTTLToRootContext(cmd *cobra.Command) error {
-	if !commandGrantsLease(cmd) {
+	if !commandGrantsLease(cmd) || storage.GrantsLeasesRemotely(getStore()) {
 		return nil
 	}
 	ctx, err := leaseTTLContext(getRootContext())
@@ -79,6 +72,25 @@ func applyLeaseTTLToRootContext(cmd *cobra.Command) error {
 	}
 	setRootContext(ctx, rootCancel)
 	return nil
+}
+
+// leaseTTLContextForStore is leaseTTLContext for a store other than the one the
+// command opened: an id routed to another workspace is leased by THAT
+// workspace's lease.ttl, not the launching one's, which is what the root
+// pre-run put on the context.
+func leaseTTLContextForStore(ctx context.Context, st storage.DoltStorage) (context.Context, error) {
+	if storage.GrantsLeasesRemotely(st) {
+		return ctx, nil // the server it dials grants the lease
+	}
+	settings, err := st.WorkspaceConfig()
+	if err != nil {
+		return nil, err
+	}
+	ttl, err := workapi.ResolveLeaseTTL(ctx, settings, storeops.DefaultLeaseTTL)
+	if err != nil {
+		return nil, err
+	}
+	return storeops.WithLeaseTTL(ctx, ttl), nil
 }
 
 // leaseTTLContext returns ctx carrying the configured lease length

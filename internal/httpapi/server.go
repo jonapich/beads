@@ -415,6 +415,17 @@ type Config struct {
 	// a server that advertises the token without enforcing the policy makes
 	// every client skip it.
 	ExternalDependencyPolicy bool
+	// LeaseTTLFromSettings makes claim, claimNext, a claiming update and
+	// heartbeat grant the lease length the workspace's lease.ttl setting names
+	// (falling back to the built-in default when it is unset), read per request
+	// through the settings role of this server's own source. Off, they grant the
+	// built-in default. A client cannot ask for a length itself: its context
+	// does not cross the wire, so without this a `bd config set lease.ttl` made
+	// on the workspace is honored by every route but this one.
+	//
+	// It is a switch rather than always-on because it adds one settings read to
+	// each of those requests; `bd serve` sets it.
+	LeaseTTLFromSettings bool
 	// Workspace is the startup snapshot GET /v0/beads/context answers from.
 	// Only the allowlisted fields are ever serialized — see contextResponse,
 	// which names the whole set and the reasons for the exclusions.

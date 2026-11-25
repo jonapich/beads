@@ -89,12 +89,22 @@ func (s *Server) handleUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// An update that claims grants a lease, so it is the workspace's lease.ttl
+	// long; one that does not claim reads no setting.
+	ctx := r.Context()
+	if request.Claim {
+		var err error
+		if ctx, err = s.leaseContext(r); err != nil {
+			s.failLeaseTTL(w, r, err)
+			return
+		}
+	}
 	lifecycle, err := s.lifecycle(r)
 	if err != nil {
 		s.failUpdate(w, r, request, err)
 		return
 	}
-	result, err := lifecycle.Update(r.Context(), request)
+	result, err := lifecycle.Update(ctx, request)
 	if err != nil {
 		s.failUpdate(w, r, request, err)
 		return

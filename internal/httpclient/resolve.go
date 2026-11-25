@@ -80,6 +80,12 @@ func (s *Store) SearchIssueIDs(_ context.Context, query string, _ types.IssueFil
 // a repeated probe and a refused search.
 func (s *Store) ExactIDLookupOnly() bool { return true }
 
+// GrantsLeasesRemotely satisfies storage.RemoteLeaseGranter: the claims and
+// heartbeats this store dials are executed by the server, which grants the lease
+// length itself (it reads the workspace's lease.ttl), so a length on the client's
+// context would never be seen.
+func (s *Store) GrantsLeasesRemotely() bool { return true }
+
 // SearchIssues serves the two shapes the v0 wire can express and refuses every
 // other one.
 //

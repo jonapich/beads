@@ -85,12 +85,18 @@ func (s *Server) handleClaim(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// The lease this claim grants is the workspace's lease.ttl, not the default.
+	ctx, err := s.leaseContext(r)
+	if err != nil {
+		s.failLeaseTTL(w, r, err)
+		return
+	}
 	claimer, err := s.claimer(r)
 	if err != nil {
 		s.failClaim(w, r, err)
 		return
 	}
-	result, err := claimer.Claim(r.Context(), issueops.ClaimRequest{IssueID: id, Actor: actor})
+	result, err := claimer.Claim(ctx, issueops.ClaimRequest{IssueID: id, Actor: actor})
 	if err != nil {
 		s.failClaim(w, r, err)
 		return

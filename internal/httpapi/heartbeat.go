@@ -50,12 +50,18 @@ func (s *Server) handleHeartbeat(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// The renewed lease is the workspace's lease.ttl long, not the default.
+	ctx, err := s.leaseContext(r)
+	if err != nil {
+		s.failLeaseTTL(w, r, err)
+		return
+	}
 	heartbeater, err := s.heartbeater(r)
 	if err != nil {
 		s.failHeartbeat(w, r, err)
 		return
 	}
-	result, err := heartbeater.Heartbeat(r.Context(), issueops.HeartbeatRequest{Actor: actor, IssueID: id})
+	result, err := heartbeater.Heartbeat(ctx, issueops.HeartbeatRequest{Actor: actor, IssueID: id})
 	if err != nil {
 		s.failHeartbeat(w, r, err)
 		return

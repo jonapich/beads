@@ -350,9 +350,13 @@ func runServe() error {
 			// the external-dependency policy (wireStorageDecorators); the
 			// handshake advertises it only if that layer is really there.
 			ExternalDependencyPolicy: externaldeps.Applied(store),
-			Workspace:                info,
-			SchemaVersion:            JSONSchemaVersion,
-			Mode:                     serveResolvedMode(info, db),
+			// Claims, heartbeats and claiming updates this server executes grant
+			// the workspace's lease.ttl, as bd's own commands do on every other
+			// route.
+			LeaseTTLFromSettings: true,
+			Workspace:            info,
+			SchemaVersion:        JSONSchemaVersion,
+			Mode:                 serveResolvedMode(info, db),
 		})
 	}
 
@@ -428,9 +432,11 @@ func runServe() error {
 		// one.
 		EventsJournalEnabled:     eventsjournal.EnabledFor(info.BeadsDir),
 		ExternalDependencyPolicy: externaldeps.AppliedToProvider(provider),
-		Workspace:                info,
-		SchemaVersion:            JSONSchemaVersion,
-		Mode:                     serveResolvedMode(info, db),
+		// As on the store arm: leases this server grants follow lease.ttl.
+		LeaseTTLFromSettings: true,
+		Workspace:            info,
+		SchemaVersion:        JSONSchemaVersion,
+		Mode:                 serveResolvedMode(info, db),
 	})
 }
 

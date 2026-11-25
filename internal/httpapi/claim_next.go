@@ -65,12 +65,18 @@ func (s *Server) handleClaimNext(w http.ResponseWriter, r *http.Request) {
 	}
 	req.Actor = actor
 
+	// The lease this claim grants is the workspace's lease.ttl, not the default.
+	ctx, err := s.leaseContext(r)
+	if err != nil {
+		s.failLeaseTTL(w, r, err)
+		return
+	}
 	claimer, err := s.readyClaimer(r)
 	if err != nil {
 		s.failErr(w, r, err)
 		return
 	}
-	result, err := claimer.ClaimNext(r.Context(), req)
+	result, err := claimer.ClaimNext(ctx, req)
 	if err != nil {
 		// The claim's scan compiles label_regex in the database's own dialect,
 		// so a pattern it cannot compile is the caller's typo and wins nothing:

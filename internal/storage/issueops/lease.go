@@ -37,6 +37,11 @@ func WithLeaseTTL(ctx context.Context, ttl time.Duration) context.Context {
 	return context.WithValue(ctx, leaseTTLContextKey{}, ttl)
 }
 
+// LeaseTTLFromContext is the lease length a claim or heartbeat made with ctx is
+// granted: the one WithLeaseTTL put there, else DefaultLeaseTTL. A test reads it
+// to prove a front door applied the workspace's setting before calling a role.
+func LeaseTTLFromContext(ctx context.Context) time.Duration { return leaseTTL(ctx) }
+
 // leaseTTL resolves the lease TTL for the current claim/heartbeat.
 func leaseTTL(ctx context.Context) time.Duration {
 	if ttl, ok := ctx.Value(leaseTTLContextKey{}).(time.Duration); ok && ttl > 0 {

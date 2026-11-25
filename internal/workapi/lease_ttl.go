@@ -1,6 +1,7 @@
 package workapi
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -39,6 +40,30 @@ func ParseLeaseTTLSetting(raw string) (time.Duration, error) {
 	if ttl <= 0 {
 		return 0, fmt.Errorf("%w: invalid %s value %q: the lease length must be greater than zero",
 			issueops.ErrValidation, SettingKeyLeaseTTL, raw)
+	}
+	return ttl, nil
+}
+
+// ResolveLeaseTTL reads the lease.ttl setting through a settings role and
+// resolves it: the configured length, or def when the setting is unset. It is
+// the one resolver every front door uses (bd's own commands and the bd serve
+// handlers), so a lease is the same length whichever process grants it. The
+// default is the caller's because the constant lives below this package.
+//
+// A stored value that does not parse, or is not greater than zero, is an error
+// naming the key rather than a silent fall back to def: a lease shorter than the
+// operator asked for is how a live claim gets reclaimed.
+func ResolveLeaseTTL(ctx context.Context, settings issueops.WorkspaceConfig, def time.Duration) (time.Duration, error) {
+	got, err := settings.GetSetting(ctx, issueops.GetSettingRequest{Key: SettingKeyLeaseTTL})
+	if err != nil {
+		return 0, err
+	}
+	ttl, err := ParseLeaseTTLSetting(got.Value)
+	if err != nil {
+		return 0, err
+	}
+	if ttl == 0 {
+		return def, nil
 	}
 	return ttl, nil
 }
