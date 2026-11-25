@@ -856,6 +856,7 @@ func outputMCPContext(w io.Writer, stealthMode bool) error {
 - **Prohibited**: Do NOT use TodoWrite, TaskCreate, or markdown files for task tracking
 - **Workflow**: Create beads issue BEFORE writing code, mark in_progress when starting
 - Persistence you don't need beats lost context
+- **Comments**: When you add a comment as an agent, pass ` + "`--author`" + ` naming yourself, e.g. ` + "`--author 'coder · <model> · <effort>'`" + `; comments that quote the user keep the default author
 - ` + profileRule + `
 
 Start: Check ` + "`ready`" + ` tool for available work.
@@ -1040,6 +1041,7 @@ git status                  # Check changed files
 - **Prohibited**: Do NOT use TodoWrite, TaskCreate, or markdown files for task tracking
 - **Workflow**: Create beads issue BEFORE writing code, mark in_progress when starting
 - Persistence you don't need beats lost context
+- **Comments**: When you add a comment as an agent, pass ` + "`--author`" + ` naming yourself, e.g. ` + "`--author 'coder · <model> · <effort>'`" + `; comments that quote the user keep the default author
 - ` + profileRule + `
 - ` + gitWorkflowRule + `
 - Session management: check ` + "`bd ready`" + ` for available work
@@ -1059,7 +1061,7 @@ git status                  # Check changed files
 - ` + "`bd update <id> --claim`" + ` - Claim work
 - ` + "`bd unclaim <id>`" + ` - Release stuck issue (agent crashed)
 - ` + "`bd update <id> --title/--description/--design`" + ` - Update fields inline (` + "`--notes`" + ` replaces existing notes and requires ` + "`--force`" + ` once set; prefer ` + "`--append-notes`" + `)
-- ` + "`bd comments add <id> \"text\"`" + ` - Add a comment
+- ` + "`bd comments add <id> \"text\" --author \"<role> · <model>\"`" + ` - Add a comment, signed as yourself (` + "`BEADS_COMMENT_AUTHOR`" + ` sets the default author)
 - ` + "`bd label add <id> <label>`" + ` / ` + "`bd label remove <id> <label>`" + ` - Manage labels
 - ` + "`bd close <id1> <id2> ...`" + ` - Close completed issues (` + "`--reason=\"explanation\"`" + ` records why)
 - **WARNING**: Do NOT use ` + "`bd edit`" + ` - it opens $EDITOR (vim/nano) which blocks agents

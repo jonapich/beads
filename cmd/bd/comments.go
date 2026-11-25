@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -190,14 +191,43 @@ func validateCommentsAddArgs(cmd *cobra.Command, args []string) error {
 	return checkCommentIDNotReservedWord(args[0])
 }
 
+// commentAuthorEnv names the environment variable a harness sets once per agent
+// so that agent's comments are signed without repeating --author on every call.
+const commentAuthorEnv = "BEADS_COMMENT_AUTHOR"
+
+// commentAuthor resolves who a `bd comments add` comment is written as. The
+// --author flag wins; failing that BEADS_COMMENT_AUTHOR (whitespace-trimmed,
+// empty counts as unset); failing that the actor, as before. It deliberately
+// does not touch the actor itself: BEADS_COMMENT_AUTHOR signs comments only, so
+// claims, assignees and audit events keep naming the real actor.
+func commentAuthor(flagValue string) string {
+	if flagValue != "" {
+		return flagValue
+	}
+	if fromEnv := strings.TrimSpace(os.Getenv(commentAuthorEnv)); fromEnv != "" {
+		return fromEnv
+	}
+	return getActorWithGit()
+}
+
 var commentsAddCmd = &cobra.Command{
 	Use:   "add [issue-id] [text...]",
 	Short: "Add a comment to an issue",
 	Long: `Add a comment to an issue.
 
+The comment is written as the actor unless you name an author. An agent signs
+its own comments with --author naming itself, for example
+--author 'coder · <model> · <effort>'; comments that quote the user keep the
+default author. A harness can set BEADS_COMMENT_AUTHOR once per agent instead
+of passing --author each time; --author wins over the variable, and with
+neither set the author is the actor, as before.
+
 Examples:
   # Add a comment
   bd comments add bd-123 "Working on this now"
+
+  # Sign a comment as an agent
+  bd comments add bd-123 "Tests are green" --author 'coder · Sonnet 5.5 · high'
 
   # Add a comment from a file
   bd comments add bd-123 -f notes.txt`,
@@ -229,9 +259,7 @@ Examples:
 		}
 
 		author, _ := cmd.Flags().GetString("author")
-		if author == "" {
-			author = getActorWithGit()
-		}
+		author = commentAuthor(author)
 
 		// Dispatched after the text is resolved so both backends read the
 		// same sources and report the same conflicts.
@@ -337,7 +365,7 @@ func init() {
 	commentsCmd.AddCommand(commentsAddCmd)
 	commentsCmd.Flags().Bool("local-time", false, "Show timestamps in local time instead of UTC")
 	commentsAddCmd.Flags().StringP("file", "f", "", "Read comment text from file")
-	commentsAddCmd.Flags().StringP("author", "a", "", "Add author to comment")
+	commentsAddCmd.Flags().StringP("author", "a", "", "Author to record on the comment (default: $BEADS_COMMENT_AUTHOR, else the actor)")
 	registerCommentKindFlags()
 
 	// Issue ID completions
