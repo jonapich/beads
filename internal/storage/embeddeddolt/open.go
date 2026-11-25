@@ -25,6 +25,11 @@ var validIdentifier = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*$`)
 const (
 	commitName  = "beads"
 	commitEmail = "beads@local"
+
+	// lockWaitInitialInterval and lockWaitMaxInterval bound the exponential
+	// backoff an engine open uses while another process holds the lock.
+	lockWaitInitialInterval = 50 * time.Millisecond
+	lockWaitMaxInterval     = time.Second
 )
 
 // OpenSQL opens an embedded Dolt database at dir. The returned cleanup
@@ -37,10 +42,7 @@ func OpenSQL(ctx context.Context, dir, database, branch string) (*sql.DB, func()
 		return nil, nil, err
 	}
 
-	bo := backoff.NewExponentialBackOff()
-	bo.MaxElapsedTime = 0 // wait until ctx cancellation
-	bo.MaxInterval = 5 * time.Second
-	cfg.BackOff = bo
+	cfg.BackOff = newLockWaitBackOff()
 
 	connector, err := doltembed.NewConnector(cfg)
 	if err != nil {
@@ -93,6 +95,23 @@ func OpenSQL(ctx context.Context, dir, database, branch string) (*sql.DB, func()
 	}
 
 	return db, cleanup, nil
+}
+
+// newLockWaitBackOff returns the retry policy an engine open uses while another
+// process holds the lock.
+//
+// With the library defaults (500ms initial, +-50%), a second bd that collided
+// with a holder slept 250-750ms before its first retry even when the holder
+// let go 10ms later, which bv saves and parallel agents hit. Each retry is a
+// lock attempt, so short intervals are cheap. Timing only: the wait still has
+// no elapsed-time limit.
+func newLockWaitBackOff() *backoff.ExponentialBackOff {
+	bo := backoff.NewExponentialBackOff()
+	bo.InitialInterval = lockWaitInitialInterval
+	bo.MaxInterval = lockWaitMaxInterval
+	bo.MaxElapsedTime = 0 // wait until ctx cancellation
+	bo.Reset()
+	return bo
 }
 
 func buildDSN(dir, database string) string {

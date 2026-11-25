@@ -86,6 +86,11 @@ type EmbeddedDoltStore struct {
 	// (e.g. the post-command autocommit net, or the commit itself) - only the
 	// migration step is skipped.
 	intent openIntent
+	// sessionsOpen counts the read sessions (WithReadSession) open on this
+	// store in this process. While it is non-zero a call that carries no
+	// session would wait on the lock the session holds; openEngine bounds
+	// that wait.
+	sessionsOpen atomic.Int32
 }
 
 // lenientSharedGateGuidance is the blunt migrate-or-adopt block shared by the
@@ -501,9 +506,17 @@ func (s *EmbeddedDoltStore) commitConn(ctx context.Context, commit bool, fn func
 		return
 	}
 
+	// Under a read session every call shares the session's engine. The session
+	// is read-only: a write there is a caller bug, and it fails here instead of
+	// committing through a handle the session will close with the rest.
+	if commit && s.sessionFrom(ctx) != nil {
+		err = errWriteInReadSession
+		return
+	}
+
 	var db *sql.DB
 	var cleanup func() error
-	db, cleanup, err = OpenSQL(ctx, s.dataDir, s.database, s.branch)
+	db, cleanup, err = s.callDB(ctx)
 	if err != nil {
 		return
 	}

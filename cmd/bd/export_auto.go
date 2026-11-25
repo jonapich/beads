@@ -109,6 +109,31 @@ func maybeAutoExport(ctx context.Context, allowEmptyOverwrite bool) error {
 		return nil
 	}
 
+	// Everything below reads the store: the change check, the guards, the
+	// export itself. An embedded store opens an engine for each read, about
+	// eighteen of them for one export, so they share one read session. The body
+	// must pass the context it is given to every store call; a write inside it
+	// fails (and is reported as an export failure like any other).
+	ran := false
+	var result error
+	sessionErr := storage.WithReadSession(ctx, store, func(ctx context.Context) error {
+		ran = true
+		result = runAutoExport(ctx, allowEmptyOverwrite)
+		return nil
+	})
+	if !ran {
+		fmt.Fprintf(os.Stderr, "Warning: auto-export skipped: failed to open the store: %v\n", sessionErr)
+		return nil
+	}
+	if sessionErr != nil {
+		// The export already ran; only closing the session's engine failed.
+		debug.Logf("auto-export: closing the read session: %v\n", sessionErr)
+	}
+	return result
+}
+
+// runAutoExport is maybeAutoExport's body, run inside a read session.
+func runAutoExport(ctx context.Context, allowEmptyOverwrite bool) error {
 	beadsDir := beads.FindBeadsDir()
 	if beadsDir == "" {
 		return nil

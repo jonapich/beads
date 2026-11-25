@@ -375,6 +375,74 @@ func GetGitCommonDir() (string, error) {
 	return ctx.commonDir, nil
 }
 
+// CommonDirFromProcessContext answers `git -C path rev-parse --git-common-dir`
+// from the git context the process already loaded for its working directory,
+// without running git. The common directory is returned absolute and ok is
+// true; ok is false whenever the answer could differ from what git would print,
+// and the caller then asks git.
+//
+// It answers only when path lies inside the working directory's own work tree
+// and no other repository can sit between the two: no environment variable that
+// moves discovery is set, path (symlinks resolved, so a .beads symlinked out of
+// the tree is not mistaken for one inside it) is at or below the work tree's
+// top level, and no `.git` entry exists in any directory from path up to, but
+// excluding, that top level (a nested repository or a submodule). It is not
+// tied to one operating system, unlike CommonDirInProcess, because it reads
+// nothing the process has not already resolved.
+func CommonDirFromProcessContext(path string) (string, bool) {
+	if discoveryEnvOverridden() {
+		return "", false
+	}
+	ctx, err := getGitContext()
+	if err != nil || ctx.commonDir == "" || ctx.repoRoot == "" {
+		return "", false
+	}
+	abs, err := filepath.Abs(path)
+	if err != nil {
+		return "", false
+	}
+	dir, err := filepath.EvalSymlinks(abs)
+	if err != nil {
+		return "", false
+	}
+	top := ctx.repoRoot
+	if !pathAtOrBelowForGit(dir, top) {
+		return "", false
+	}
+	for d := dir; !sameGitPath(d, top); d = filepath.Dir(d) {
+		if _, err := os.Lstat(filepath.Join(d, ".git")); !errors.Is(err, os.ErrNotExist) {
+			// A nested repository or submodule (or a stat that failed, which
+			// proves nothing): git would stop here, not at the top level.
+			return "", false
+		}
+		if parent := filepath.Dir(d); parent == d {
+			return "", false
+		}
+	}
+	return ctx.commonDir, true
+}
+
+// sameGitPath compares two paths the way the work-tree containment check needs:
+// exactly, except on the case-insensitive platforms.
+func sameGitPath(a, b string) bool {
+	if runtime.GOOS == "windows" || runtime.GOOS == "darwin" {
+		return strings.EqualFold(a, b)
+	}
+	return a == b
+}
+
+// pathAtOrBelowForGit reports whether path is root or lies below it.
+func pathAtOrBelowForGit(path, root string) bool {
+	if sameGitPath(path, root) {
+		return true
+	}
+	prefix := strings.TrimSuffix(root, string(filepath.Separator)) + string(filepath.Separator)
+	if len(path) < len(prefix) {
+		return false
+	}
+	return sameGitPath(path[:len(prefix)], prefix)
+}
+
 // GetGitHooksDir returns the path to the Git hooks directory.
 // This function is worktree-aware: hooks are shared across all worktrees
 // and live in the common git directory (e.g., /repo/.git/hooks), not in

@@ -97,7 +97,24 @@ func (r *storeReader) Ready(ctx context.Context, req issueops.ReadyRequest) (iss
 // EnforceMaxRowsCap), so the answer is *ErrTooManyRows instead of a page.
 // Offset rides on the two workapi calls this method already made for the
 // has-more probe row — one widens the bound, the other cuts the page.
+//
+// The config load, the search and the comment hydration are separate store
+// reads; an embedded store opens an engine for each, so the body runs in one
+// read session (storage.WithReadSession).
 func (r *storeReader) List(ctx context.Context, req issueops.ListRequest) (issueops.IssuePage, error) {
+	var page issueops.IssuePage
+	err := storage.WithReadSession(ctx, r.store, func(ctx context.Context) error {
+		var err error
+		page, err = r.list(ctx, req)
+		return err
+	})
+	if err != nil {
+		return issueops.IssuePage{}, err
+	}
+	return page, nil
+}
+
+func (r *storeReader) list(ctx context.Context, req issueops.ListRequest) (issueops.IssuePage, error) {
 	cfg, err := workapi.LoadStoreListConfig(ctx, r.store)
 	if err != nil {
 		return issueops.IssuePage{}, err
@@ -141,15 +158,27 @@ func (r *storeReader) List(ctx context.Context, req issueops.ListRequest) (issue
 	return issueops.IssuePage{Items: items, HasMore: hasMore}, nil
 }
 
+// Get answers one detail view. The row, its counts, its dependency and comment
+// lists are about eight store reads; an embedded store opens an engine for each,
+// so they run in one read session (storage.WithReadSession). The session also
+// serves them all from one snapshot of the database.
 func (r *storeReader) Get(ctx context.Context, req issueops.GetRequest) (*issueops.IssueDetails, error) {
-	src := workapi.NewStoreDetailSource(r.store)
-	issue, isWisp, err := workapi.GetIssueOrWisp(ctx, src, req.ID)
+	var details *issueops.IssueDetails
+	err := storage.WithReadSession(ctx, r.store, func(ctx context.Context) error {
+		src := workapi.NewStoreDetailSource(r.store)
+		issue, isWisp, err := workapi.GetIssueOrWisp(ctx, src, req.ID)
+		if err != nil {
+			return err
+		}
+		details, err = workapi.BuildIssueDetails(ctx, src, issue, isWisp, workapi.DetailOptions{
+			IncludeDependents: req.IncludeDependents,
+			IncludeComments:   req.IncludeComments,
+			BriefDeps:         req.BriefDeps,
+		})
+		return err
+	})
 	if err != nil {
 		return nil, err
 	}
-	return workapi.BuildIssueDetails(ctx, src, issue, isWisp, workapi.DetailOptions{
-		IncludeDependents: req.IncludeDependents,
-		IncludeComments:   req.IncludeComments,
-		BriefDeps:         req.BriefDeps,
-	})
+	return details, nil
 }

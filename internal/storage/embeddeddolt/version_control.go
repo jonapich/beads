@@ -24,9 +24,17 @@ func (s *EmbeddedDoltStore) withDBConn(ctx context.Context, fn func(db versionco
 		return errClosed
 	}
 
+	// A read session's engine serves the read-only queries that come through
+	// here (HASHOF, log, commit lookups). The session owns the engine, so there
+	// is nothing to clean up. The mutating variants refuse a session before
+	// they get here.
+	if rs := s.sessionFrom(ctx); rs != nil {
+		return fn(rs.db)
+	}
+
 	var db *sql.DB
 	var cleanup func() error
-	db, cleanup, err = OpenSQL(ctx, s.dataDir, s.database, s.branch)
+	db, cleanup, err = s.openEngine(ctx)
 	if err != nil {
 		return
 	}
@@ -54,10 +62,16 @@ func (s *EmbeddedDoltStore) withPinnedDBConn(ctx context.Context, fn func(db ver
 	if s.closed.Load() {
 		return errClosed
 	}
+	// A pinned connection changes session state across statements; it must not
+	// leak into the shared connection, and a second engine would wait on the
+	// lock the session holds.
+	if s.sessionFrom(ctx) != nil {
+		return errVCInReadSession
+	}
 
 	var db *sql.DB
 	var cleanup func() error
-	db, cleanup, err = OpenSQL(ctx, s.dataDir, s.database, s.branch)
+	db, cleanup, err = s.openEngine(ctx)
 	if err != nil {
 		return
 	}
@@ -85,6 +99,11 @@ func (s *EmbeddedDoltStore) withPinnedDBConn(ctx context.Context, fn func(db ver
 func (s *EmbeddedDoltStore) withMutatingDBConn(ctx context.Context, fn func(db versioncontrolops.DBConn) error) error {
 	if s.readOnly {
 		return ErrReadOnly
+	}
+	// A mutation inside a read session would change the shared connection's
+	// state or write through it; it fails loudly instead.
+	if s.sessionFrom(ctx) != nil {
+		return errVCInReadSession
 	}
 	return s.withDBConn(ctx, fn)
 }

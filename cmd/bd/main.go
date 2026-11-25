@@ -2638,8 +2638,17 @@ var rootCmd = &cobra.Command{
 					}
 				}
 
-				// Auto-backup: sync a Dolt-native backup if enabled and due
-				runPostRunAutoBackup(rootCtx)
+				// Auto-backup: sync a Dolt-native backup if enabled and due.
+				// Skipped for read-only commands, like the auto-push and
+				// auto-GC steps below and like the docs say (backup runs after
+				// WRITE commands). A read paid for it on every call: the
+				// `git remote` probe plus an engine open for the change check,
+				// and a whole backup export on the first read after the
+				// interval. The proxied arm above still runs it for reads
+				// (backup_auto_proxied_test.go pins that).
+				if !isReadOnlyCommand(cmd.Name()) {
+					runPostRunAutoBackup(rootCtx)
+				}
 
 				// Auto-export: write git-tracked JSONL for portability if enabled and due.
 				// Read-only commands must not perform post-run maintenance writes or emit

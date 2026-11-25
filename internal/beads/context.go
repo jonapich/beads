@@ -400,10 +400,18 @@ func pathAtOrBelow(path, root string) bool {
 // For worktrees, this returns the shared git directory (common to all worktrees).
 //
 // Every startup that builds a RepoContext asks this about the beads
-// directory, so the answer comes from git.CommonDirInProcess when it can,
-// with `git -C path rev-parse --git-common-dir` as the fallback.
+// directory, so the answer comes from git.CommonDirInProcess when it can, then
+// from the git context the process already loaded for its working directory
+// (git.CommonDirFromProcessContext, which works on every platform and answers
+// the usual case of a beads directory inside that work tree), with
+// `git -C path rev-parse --git-common-dir` as the last fallback.
 func getGitCommonDirForPath(path string) (string, error) {
 	result, isRepo, ok := git.CommonDirInProcess(path)
+	if !ok {
+		if common, found := git.CommonDirFromProcessContext(path); found {
+			result, isRepo, ok = common, true, true
+		}
+	}
 	switch {
 	case ok && !isRepo:
 		return "", fmt.Errorf("failed to get git common dir for %s: not a git repository", path)
