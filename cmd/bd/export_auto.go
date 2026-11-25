@@ -831,8 +831,8 @@ func exportToFileSession(ctx context.Context, path string, includeMemories bool,
 	if err := guardAutoExportOverwrite(path, infraTypeSet, includeMemories, storeIDs); err != nil {
 		return 0, 0, err
 	}
-	// Returned explicitly so the named err is set and the deferred Abort drops
-	// the temp file, keeping the previous export (GH#6870).
+	// A relation that failed to load fails the export here, before the temp file
+	// exists, so the previous export stays as it was (GH#6870).
 	if relationsErr != nil {
 		return 0, 0, relationsErr
 	}
@@ -1461,7 +1461,7 @@ func tryIncrementalExportSession(ctx context.Context, fullPath, fromCommit, toCo
 		// "incremental" outcome: no issues to rewrite, just refresh the
 		// file in place so nothing regresses.
 		endSession() // no more store reads: the rewrite is file work only
-		issueCount, memoryCount, err = rewriteExportFile(fullPath, nil, nil, nil)
+		issueCount, memoryCount, err = rewriteExportFileFn(fullPath, nil, nil, nil)
 		if err != nil {
 			return 0, 0, nil, false, err
 		}
@@ -1530,7 +1530,7 @@ func tryIncrementalExportSession(ctx context.Context, fullPath, fromCommit, toCo
 	}
 
 	endSession() // every read is done: reading the file back and rewriting it is file work only
-	issueCount, memoryCount, err = rewriteExportFile(fullPath, records, removed, upsertIDs)
+	issueCount, memoryCount, err = rewriteExportFileFn(fullPath, records, removed, upsertIDs)
 	if err != nil {
 		return 0, 0, nil, false, err
 	}
@@ -1559,6 +1559,10 @@ func unionStrings(a, b []string) []string {
 	}
 	return out
 }
+
+// rewriteExportFileFn is rewriteExportFile behind a variable so a test can fail the
+// rewrite, which comes after the read session has ended.
+var rewriteExportFileFn = rewriteExportFile
 
 // rewriteExportFile applies a set of upserts and removals to an existing
 // JSONL export and writes the result atomically. upsertOrder preserves

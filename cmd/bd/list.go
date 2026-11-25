@@ -245,12 +245,12 @@ func runListCore(cmd *cobra.Command, _ []string) error {
 	}
 
 	activeStore := store
-	// openRoutedReadStore, in two steps so the session can end between them: the
-	// routing check reads the local store (in the session), but opening the target
-	// opens another store, which may be this same data directory and would then
-	// wait for ever on the lock the session holds.
-	// The role detection a role-based route needs runs git, so the helper ends the
-	// session around it (and begins another if the answer is not to route).
+	// openRoutedReadStore, in steps so the session can end between them. The
+	// routing check reads the local store (in the session); the role detection a
+	// role-based route needs runs git, so the helper ends the session around it
+	// (and begins another if the answer is not to route). Opening the target opens
+	// another store, which may be this same data directory and would then wait for
+	// ever on the lock the session holds, so the session is over before that.
 	var repoPath string
 	var rule routing.RoutingRule
 	repoPath, rule, sessionCtx, endSession = determineAutoRoutedRepoPathInSession(ctx, store, sessionCtx, endSession)
