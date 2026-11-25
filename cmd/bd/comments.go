@@ -195,6 +195,10 @@ func validateCommentsAddArgs(cmd *cobra.Command, args []string) error {
 // so that agent's comments are signed without repeating --author on every call.
 const commentAuthorEnv = "BEADS_COMMENT_AUTHOR"
 
+// commentAuthorFlagUsage is the --author help of both comment commands, so the
+// two cannot describe the resolution differently.
+const commentAuthorFlagUsage = "Author to record on the comment (default: $BEADS_COMMENT_AUTHOR, else the actor)"
+
 // commentAuthor resolves who a `bd comments add` comment is written as. The
 // --author flag wins; failing that BEADS_COMMENT_AUTHOR (whitespace-trimmed,
 // empty counts as unset); failing that the actor, as before. It deliberately
@@ -365,7 +369,7 @@ func init() {
 	commentsCmd.AddCommand(commentsAddCmd)
 	commentsCmd.Flags().Bool("local-time", false, "Show timestamps in local time instead of UTC")
 	commentsAddCmd.Flags().StringP("file", "f", "", "Read comment text from file")
-	commentsAddCmd.Flags().StringP("author", "a", "", "Author to record on the comment (default: $BEADS_COMMENT_AUTHOR, else the actor)")
+	commentsAddCmd.Flags().StringP("author", "a", "", commentAuthorFlagUsage)
 	registerCommentKindFlags()
 
 	// Issue ID completions

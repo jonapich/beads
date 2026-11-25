@@ -111,11 +111,16 @@ var commentCmd = &cobra.Command{
 
 Shorthand for 'bd comments add <id> "text"'.
 
+The comment is written as the actor unless you name an author, exactly as with
+'bd comments add': --author wins, then BEADS_COMMENT_AUTHOR, then the actor.
+--kind stores a kinded comment (see 'bd comments add --help').
+
 Examples:
   bd comment bd-123 "Working on this now"
   bd comment bd-123 Working on this now
   echo "comment from pipe" | bd comment bd-123 --stdin
   bd comment bd-123 --file notes.txt
+  bd comment bd-123 "Tests are green" --author 'coder · Sonnet 5.5 · high'
 
 Note: "comment" (singular) only adds a comment — it has no "list" subcommand.
 To list comments on an issue, use the plural form: bd comments <id>`,
@@ -135,13 +140,22 @@ To list comments on an issue, use the plural form: bd comments <id>`,
 		id := args[0]
 		textArgs := args[1:]
 
-		commentText, err := requireTextFromSources("comment text", "use positional args, --stdin, or --file",
-			cmdTextSources(cmd, textArgs))
+		commentText, kinded, err := kindedCommentText(cmd, textArgs)
 		if err != nil {
 			return HandleErrorRespectJSON("%v", err)
 		}
+		if !kinded {
+			commentText, err = requireTextFromSources("comment text", "use positional args, --stdin, or --file",
+				cmdTextSources(cmd, textArgs))
+			if err != nil {
+				return HandleErrorRespectJSON("%v", err)
+			}
+		}
 
-		author := getActorWithGit()
+		// The same resolution as `bd comments add`: --author, then
+		// BEADS_COMMENT_AUTHOR, then the actor.
+		author, _ := cmd.Flags().GetString("author")
+		author = commentAuthor(author)
 
 		// Dispatched after the text is resolved so both backends read the
 		// same sources and report the same conflicts.
@@ -202,6 +216,7 @@ To list comments on an issue, use the plural form: bd comments <id>`,
 
 func init() {
 	registerTextSourceFlags(commentCmd, "comment text")
+	commentCmd.Flags().StringP("author", "a", "", commentAuthorFlagUsage)
 	commentCmd.ValidArgsFunction = issueIDCompletion
 	rootCmd.AddCommand(commentCmd)
 }

@@ -30,9 +30,17 @@ type kindedComment struct {
 	Data      json.RawMessage `json:"data"`
 }
 
+// The --kind and --json-file help of the two commands that add a comment.
+const (
+	commentAddKindUsage     = "Store a kinded comment (e.g. handoff); read back with bd comments <id> --kind <kind>"
+	commentAddJSONFileUsage = "Read a JSON comment body from a file (- for stdin); requires --kind"
+)
+
 func registerCommentKindFlags() {
-	commentsAddCmd.Flags().String("kind", "", "Store a kinded comment (e.g. handoff); read back with bd comments <id> --kind <kind>")
-	commentsAddCmd.Flags().String("json-file", "", "Read a JSON comment body from a file (- for stdin); requires --kind")
+	commentsAddCmd.Flags().String("kind", "", commentAddKindUsage)
+	commentsAddCmd.Flags().String("json-file", "", commentAddJSONFileUsage)
+	commentCmd.Flags().String("kind", "", commentAddKindUsage)
+	commentCmd.Flags().String("json-file", "", commentAddJSONFileUsage)
 	commentsCmd.Flags().String("kind", "", "List only comments of this kind, as structured records")
 	commentsCmd.Flags().Bool("last", false, "With --kind: return only the most recent one")
 }

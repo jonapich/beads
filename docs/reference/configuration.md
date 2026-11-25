@@ -327,7 +327,7 @@ export BEADS_ACTOR="my-github-handle"
 
 ### Comment author
 
-`bd comments add` records the comment under the actor unless you name an author. An agent should sign its own comments so a reader can tell who wrote them, by passing `--author` with its role and model, for example `--author 'coder · Sonnet 5.5 · high'`. Comments that quote the user keep the default author. `bd prime` tells agents this in its Core Rules.
+`bd comments add` and its shorthand `bd comment` record the comment under the actor unless you name an author. An agent should sign its own comments so a reader can tell who wrote them, by passing `--author` with its role and model, for example `--author 'coder · Sonnet 5.5 · high'`. Comments that quote the user keep the default author. `bd prime` tells agents this in its Core Rules.
 
 A harness can set `BEADS_COMMENT_AUTHOR` once per agent instead of passing the flag on every call. The `--author` flag wins over the variable, a blank variable counts as unset, and with neither the author is the actor as before. The variable signs comments only: claims, assignees and audit events still name the actor.
 
@@ -589,7 +589,7 @@ Selected commonly-used variables:
 | `BEADS_CEILING_DIRECTORIES` | Directories (separated like `PATH`) that `.beads` and `config.yaml` discovery never looks at or above, like git's `GIT_CEILING_DIRECTORIES`; the starting directory is always examined. For sandboxes such as `bazel test` that must not reach the user's own `~/.beads`. Independent of this ceiling, workspace discovery passes over the user's own `~/.beads` unless the home directory is the repository root (see `BEADS_DIR`), and does not look above the home directory unless a repository encloses it |
 | `BEADS_ACTOR` | Actor identity (preferred over `BD_ACTOR`, which is a deprecated alias) |
 | `BEADS_IDENTITY` | Sender identity for `bd mail` |
-| `BEADS_COMMENT_AUTHOR` | Default author for `bd comments add` when `--author` is not given (see [Comment author](#comment-author)) |
+| `BEADS_COMMENT_AUTHOR` | Default author for `bd comments add` and `bd comment` when `--author` is not given (see [Comment author](#comment-author)) |
 | `BEADS_FSCK_TIMEOUT` | Runtime-only timeout for the pre-push `dolt fsck --quiet` integrity check (default `30s`) |
 | `BEADS_INIT_GATE_TIMEOUT` | How long `bd init` waits for another bd process (another init, or live commands on the same workspace or shared server) to release the workspace gate before refusing (default `60s`; accepts durations like `2m` or bare seconds like `90`) |
 | `BEADS_GATE_WAIT_TIMEOUT` | How long an ordinary bd command waits while a maintenance operation (`bd init`, backup restore, migrate, bootstrap — on the same workspace, or on any project sharing the server in shared-server mode) holds or is queued for the workspace gate, before failing (default `30s`; accepts durations like `1m` or bare seconds like `90`; `0` fails immediately, for scripts that want the old fail-fast behavior). Queued maintenance operations run one after another and a waiting command waits for all of them; a queued one only delays a command, never fails it, and stops queueing others after 10s if it cannot get in. Git hooks always fail fast |
